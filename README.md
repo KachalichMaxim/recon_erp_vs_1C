@@ -17,6 +17,11 @@
 - `tools/build_aero_trade_reference_export.mjs` - генератор XLSX-выгрузки.
 - `reference/legacy_erp_to_1c_import_module.bsl` - фрагмент legacy 1C-сервиса, учтенный при описании требований.
 - `ui/index.html` - текущий HTML-макет матрицы.
+- `php_legacy/lib_1c_soap_layer.php` - legacy PHP-слой вызовов SOAP 1C (`c1c_getAkts`, `c1c_getAccHist`, `c1c_getcoacsu`, `c1c_getcoacsuinfo1C` и др.).
+- `php_legacy/rowsLib.php`, `php_legacy/class.php`, `php_legacy/printShablonFuntions.php` - ERP PHP-код с текущими SQL-связями поставок, счетов, актов, оплат и отчетных форм.
+- `api/reconciliation_api_server.redacted.py` - текущий прототип API матрицы сверки с редактированными параметрами подключения.
+- `sql/1c_reconciliation_schema.sql` - схема логирования запусков и результатов сверки.
+- `sql/PowerBI_master_spec_invoice_matrix.sql` - SQL-референс по матрице поставка/счет/операция.
 
 ## Что проверять в аудите
 
