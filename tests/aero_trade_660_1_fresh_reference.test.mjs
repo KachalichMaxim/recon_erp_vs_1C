@@ -14,7 +14,7 @@ function assertMoney(actual, expected, message) {
   assert.equal(Math.round(money(actual) * 100), Math.round(expected * 100), message);
 }
 
-test("fresh 660/1 reference uses lower 2025 sheet rows and reconciles block deltas", async () => {
+test("fresh 660/1 reference uses lower 2025 reference rows and reconciles block deltas", async () => {
   const reference = await readJson("reference/aero_trade_660_1_fresh_reference.json");
   const blocks = reference.blocks;
   const specs = bySpec(blocks);

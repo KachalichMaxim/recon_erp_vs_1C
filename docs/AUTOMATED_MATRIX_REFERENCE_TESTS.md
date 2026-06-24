@@ -21,7 +21,7 @@
 npm test
 ```
 
-Команда запускает встроенный Node.js test runner и не требует подключения к MariaDB, SOAP, PostgreSQL, Google Drive или Python-сервису. Проверки используют уже сохраненные JSON-артефакты.
+Команда запускает встроенный Node.js test runner и не требует подключения к MariaDB, SOAP, внешним аналитическим хранилищам или Python-сервису. Проверки используют уже сохраненные JSON-артефакты.
 
 После текущей проверки сохранен визуальный артефакт интерфейса: `screenshots/ui/matrix_after_reference_tests.png`.
 
