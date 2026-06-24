@@ -4,8 +4,11 @@
 
 ## Основные артефакты
 
-- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.docx` - итоговое ТЗ.
-- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.pdf` - PDF-рендер ТЗ для быстрого просмотра.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.docx` - актуальное итоговое ТЗ с live MariaDB-версией и разделом 5.5.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.pdf` - PDF-рендер актуального ТЗ для быстрого просмотра.
+- `docs/TZ_ERP_1C_DEVELOPER_MATRIX_ALGORITHM.md` - читаемый в GitHub алгоритм сборки матрицы и XLSX: SQL, формулы, раскладка колонок.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.docx` - тот же итоговый DOCX без суффикса версии.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.pdf` - тот же PDF без суффикса версии.
 - `exports/AERO_TRADE_660-1_live_mariadb_reconciliation_20260624.xlsx` - live-выгрузка по договору 660/1, собранная SQL-запросами с сервера к MariaDB.
 - `reference/aero_trade_660_1_live_mariadb_report_20260624.json` - машинный протокол live-прогона: операции, счета, оплаты, закрывающие документы и суммы `get_*`.
 - `screenshots/docx/` - постраничный PNG-рендер ТЗ.
@@ -16,8 +19,9 @@
 
 Финальный документ для передачи PHP-разработчику:
 
-- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.docx`;
-- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.pdf`.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.docx`;
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.pdf`;
+- `docs/TZ_ERP_1C_DEVELOPER_MATRIX_ALGORITHM.md`.
 
 Документ описывает производственную доработку встроенного ERP-интерфейса, а не отдельный сервис: PHP ERP, MariaDB и существующий PHP/SOAP-слой 1С.
 Раздел `5.5 Сквозной алгоритм для PHP-разработчика` в DOCX/PDF описывает, какие данные выбирать, как агрегировать блок поставки и как заполнять каждую колонку XLSX.

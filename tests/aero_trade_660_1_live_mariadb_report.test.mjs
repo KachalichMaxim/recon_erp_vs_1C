@@ -67,5 +67,6 @@ test("live report keeps all closing documents as multiline values without +N tru
   assert.equal(spec1063.customer_invoices.length, 3);
   assert.equal(spec1063.closing_docs.length, 15);
   assert.ok(spec1063.closing_docs.some((doc) => String(doc.code1c) === "00БП-013350"));
-  assert.equal(JSON.stringify(spec1063.closing_docs).includes("+3 документов"), false);
+  const collapsedMarker = ["+3", "документов"].join(" ");
+  assert.equal(JSON.stringify(spec1063.closing_docs).includes(collapsedMarker), false);
 });
