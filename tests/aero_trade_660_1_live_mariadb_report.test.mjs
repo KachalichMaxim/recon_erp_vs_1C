@@ -59,6 +59,11 @@ test("live report keeps all closing documents as multiline values without +N tru
   const spec1063 = specs.get("1063");
 
   assert.ok(spec1063, "spec 1063 should exist");
+  assert.equal(spec1063.spec_id, 20351);
+  assert.equal(spec1063.spec_num_short, "660/1/1063");
+  assert.equal(spec1063.spec_type, "Заявка");
+  assert.equal(spec1063.spec_subtype, "Заявка");
+  assert.equal(spec1063.spec_label, "Заявка №1063");
   assertMoney(spec1063.totals.paid_total_get_paidsum, 199_375.04);
   assertMoney(spec1063.totals.reimbursable_realization_get_realizsum, 185_181.88);
   assertMoney(spec1063.totals.non_reimbursable_realization_get_realizsum, 41_275.82);

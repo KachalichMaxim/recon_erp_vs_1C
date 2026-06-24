@@ -36,7 +36,7 @@
     "dog_code1c": "БП-003453"
   },
   "sql_sources": {
-    "hierarchy": "veda_contacts -> veda_clients.f_contactid -> veda_dogs.f_contrid -> veda_specs.f_dogid",
+    "hierarchy": "veda_contacts -> veda_clients.f_contactid -> veda_dogs.f_contrid -> veda_specs.f_dogid; label/type from view_specs.spec_type/spec_subtype/spec_num_short",
     "operations": "veda_spec_invoices with f_parenttype in (2,4); f_parenttype=4 resolved through veda_categs f_ctgtype=24/f_objecttype=5",
     "payments": "get_paidsum(oper.f_id) and control SUM(veda_acchist_docs.f_clssum); JOIN veda_acchist ah ON ah.f_id = ahd.f_acchistid; ahd.f_doctype=3; ah.f_type=0",
     "realization": "get_realizsum(oper.f_id), split by veda_spec_invoices.f_isvozm",
@@ -62,7 +62,7 @@
       "spec_id": 20351,
       "spec_num": "1063",
       "spec_date": "2025-05-12",
-      "spec_name": "ATV-827-S сборный 827 Gushi",
+      "spec_name": "660/1/1063/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20351,
         "spec_number": "1063",
@@ -495,13 +495,18 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 1585.7
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1063",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1063"
     },
     {
       "spec_id": 20352,
       "spec_num": "1064",
       "spec_date": "2025-05-12",
-      "spec_name": "ATV-827-S сборный 827 SEKO",
+      "spec_name": "660/1/1064/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20352,
         "spec_number": "1064",
@@ -914,13 +919,18 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 1067.18
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1064",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1064"
     },
     {
       "spec_id": 20353,
       "spec_num": "1065",
       "spec_date": "2025-05-12",
-      "spec_name": "ATV-827-S сборный 827 Tinyang ",
+      "spec_name": "660/1/1065/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20353,
         "spec_number": "1065",
@@ -1333,13 +1343,18 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 1349.57
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1065",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1065"
     },
     {
       "spec_id": 20818,
       "spec_num": "1068",
       "spec_date": "2025-05-26",
-      "spec_name": "ATV-840-S море 840 Кофемолка, Хлебопечь, Кофеварка",
+      "spec_name": "660/1/1068/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20818,
         "spec_number": "1068",
@@ -1664,13 +1679,18 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 0.0
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1068",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1068"
     },
     {
       "spec_id": 20824,
       "spec_num": "1072",
       "spec_date": "2025-05-26",
-      "spec_name": "ATV-846-S сборный 846 Hengxiang Вертикальный пылесос",
+      "spec_name": "660/1/1072/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20824,
         "spec_number": "1072",
@@ -1961,13 +1981,18 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 4080.03
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1072",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1072"
     },
     {
       "spec_id": 20825,
       "spec_num": "1073",
       "spec_date": "2025-05-26",
-      "spec_name": "ATV-846-S сборный 846 Weitek Вертикальный пылесос",
+      "spec_name": "660/1/1073/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20825,
         "spec_number": "1073",
@@ -2258,13 +2283,18 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 1677.61
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1073",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1073"
     },
     {
       "spec_id": 20822,
       "spec_num": "1074",
       "spec_date": "2025-05-26",
-      "spec_name": "ATV-836-S море 836 Фритюрница, Кофеварка, Чайник, Кофемолка",
+      "spec_name": "660/1/1074/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20822,
         "spec_number": "1074",
@@ -2577,13 +2607,18 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 5640.04
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1074",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1074"
     },
     {
       "spec_id": 20858,
       "spec_num": "1076",
       "spec_date": "2025-05-26",
-      "spec_name": "ATV-842-S море 842",
+      "spec_name": "660/1/1076/ВА/АЭРО-ТРЕЙД",
       "delivery": {
         "spec_id": 20858,
         "spec_number": "1076",
@@ -2874,7 +2909,12 @@
           "expenses_get_expensessum": 0.0,
           "profit_get_profit": 17725.61
         }
-      ]
+      ],
+      "spec_num_short": "660/1/1076",
+      "spec_type": "Заявка",
+      "spec_subtype": "Заявка",
+      "spec_subtype_id": 5,
+      "spec_label": "Заявка №1076"
     }
   ]
 }

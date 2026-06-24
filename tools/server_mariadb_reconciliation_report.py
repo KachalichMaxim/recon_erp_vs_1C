@@ -28,6 +28,10 @@ DEFAULT_SPEC_NUMS = ["1063", "1064", "1065", "1068", "1072", "1073", "1074", "10
 class ResolvedSpec:
     spec_id: int
     spec_num: str
+    spec_num_short: str
+    spec_type: str
+    spec_subtype: str
+    spec_subtype_id: int
     spec_date: str
     spec_name: str
     dog_id: int
@@ -111,10 +115,15 @@ def resolve_specs(api: Any, dog_id: int, spec_nums: list[str]) -> list[ResolvedS
 SELECT
     s.f_id,
     COALESCE(s.f_num, '') AS spec_num,
-    COALESCE(DATE_FORMAT(s.f_dt, '%Y-%m-%d'), '') AS spec_date,
-    COALESCE(s.f_tovar, '') AS spec_name,
+    COALESCE(vs.spec_num_short, s.f_num, '') AS spec_num_short,
+    COALESCE(vs.spec_type, '') AS spec_type,
+    COALESCE(vs.spec_subtype, '') AS spec_subtype,
+    COALESCE(vs.spec_subtypeid, s.f_subtype, 0) AS spec_subtype_id,
+    COALESCE(DATE_FORMAT(vs.spec_date, '%Y-%m-%d'), DATE_FORMAT(s.f_dt, '%Y-%m-%d'), '') AS spec_date,
+    COALESCE(vs.spec_name, s.f_tovar, '') AS spec_name,
     COALESCE(s.f_dogid, 0) AS dog_id
 FROM veda_specs s
+LEFT JOIN view_specs vs ON vs.spec_id = s.f_id
 WHERE s.f_dogid = {dog_id}
   AND CAST(s.f_num AS CHAR) IN ({in_list})
 ORDER BY FIELD(CAST(s.f_num AS CHAR), {order_expr}), s.f_id;
@@ -124,9 +133,13 @@ ORDER BY FIELD(CAST(s.f_num AS CHAR), {order_expr}), s.f_id;
         ResolvedSpec(
             spec_id=int(row[0]),
             spec_num=row[1],
-            spec_date=row[2],
-            spec_name=row[3],
-            dog_id=int(row[4] or 0),
+            spec_num_short=row[2],
+            spec_type=row[3],
+            spec_subtype=row[4],
+            spec_subtype_id=int(row[5] or 0),
+            spec_date=row[6],
+            spec_name=row[7],
+            dog_id=int(row[8] or 0),
         )
         for row in rows
     ]
@@ -297,6 +310,11 @@ def build_spec_block(api: Any, item: ResolvedSpec) -> dict[str, Any]:
     return {
         "spec_id": item.spec_id,
         "spec_num": item.spec_num,
+        "spec_num_short": item.spec_num_short,
+        "spec_type": item.spec_type,
+        "spec_subtype": item.spec_subtype,
+        "spec_subtype_id": item.spec_subtype_id,
+        "spec_label": f"{item.spec_type or 'Поставка'} №{item.spec_num}",
         "spec_date": item.spec_date,
         "spec_name": item.spec_name,
         "delivery": delivery,
@@ -396,7 +414,7 @@ def build_report(api: Any, args: argparse.Namespace) -> dict[str, Any]:
         },
         "context": context,
         "sql_sources": {
-            "hierarchy": "veda_contacts -> veda_clients.f_contactid -> veda_dogs.f_contrid -> veda_specs.f_dogid",
+            "hierarchy": "veda_contacts -> veda_clients.f_contactid -> veda_dogs.f_contrid -> veda_specs.f_dogid; label/type from view_specs.spec_type/spec_subtype/spec_num_short",
             "operations": "veda_spec_invoices with f_parenttype in (2,4); f_parenttype=4 resolved through veda_categs f_ctgtype=24/f_objecttype=5",
             "payments": "get_paidsum(oper.f_id) and control SUM(veda_acchist_docs.f_clssum); JOIN veda_acchist ah ON ah.f_id = ahd.f_acchistid; ahd.f_doctype=3; ah.f_type=0",
             "realization": "get_realizsum(oper.f_id), split by veda_spec_invoices.f_isvozm",
@@ -419,6 +437,9 @@ def write_csv(report: dict[str, Any], path: Path) -> None:
         writer.writerow(
             [
                 "spec_num",
+                "spec_label",
+                "spec_type",
+                "spec_subtype",
                 "spec_id",
                 "invoice_total",
                 "paid_get_paidsum",
@@ -436,6 +457,9 @@ def write_csv(report: dict[str, Any], path: Path) -> None:
             writer.writerow(
                 [
                     block["spec_num"],
+                    block.get("spec_label", ""),
+                    block.get("spec_type", ""),
+                    block.get("spec_subtype", ""),
                     block["spec_id"],
                     block["totals"]["customer_invoice_total"],
                     block["totals"]["paid_total_get_paidsum"],
@@ -508,7 +532,7 @@ def write_xlsx(report: dict[str, Any], path: Path) -> None:
             row += 1
         end = row - 1
 
-        ws.cell(start, 1, f"Спецификация {block['spec_num']}")
+        ws.cell(start, 1, block.get("spec_label") or f"Поставка №{block['spec_num']}")
         ws.cell(start, 5, block["totals"]["paid_total_get_paidsum"])
         ws.cell(start, 7, block["totals"]["reimbursable_realization_get_realizsum"])
         ws.cell(start, 8, block["totals"]["non_reimbursable_realization_get_realizsum"])
@@ -575,46 +599,6 @@ def write_xlsx(report: dict[str, Any], path: Path) -> None:
             cell.border = border
             cell.alignment = Alignment(vertical="top", wrap_text=True)
 
-    ops = wb.create_sheet("Операции ERP")
-    ops_headers = [
-        "spec_num",
-        "oper_id",
-        "oper_num",
-        "type",
-        "f_isvozm",
-        "isvozm_name",
-        "nds",
-        "get_paidsum",
-        "get_realizsum",
-        "get_expensessum",
-        "get_profit",
-    ]
-    ops.append(ops_headers)
-    for block in report["blocks"]:
-        for op in block["operation_rows"]:
-            ops.append(
-                [
-                    block["spec_num"],
-                    op["oper_id"],
-                    op["oper_num"],
-                    op["type"],
-                    op["f_isvozm"],
-                    op["isvozm_name"],
-                    op["nds"],
-                    op["paid_get_paidsum"],
-                    op["realiz_get_realizsum"],
-                    op["expenses_get_expensessum"],
-                    op["profit_get_profit"],
-                ]
-            )
-    for cell in ops[1]:
-        cell.fill = fills["header"]
-        cell.font = Font(bold=True)
-    for row_cells in ops.iter_rows():
-        for cell in row_cells:
-            cell.border = border
-            cell.alignment = Alignment(vertical="top", wrap_text=True)
-
     widths = {
         "A": 22,
         "B": 3,
@@ -630,12 +614,11 @@ def write_xlsx(report: dict[str, Any], path: Path) -> None:
     }
     for col, width in widths.items():
         ws.column_dimensions[col].width = width
-    for sheet in [rules, ops]:
+    for sheet in [rules]:
         for col_idx in range(1, sheet.max_column + 1):
             sheet.column_dimensions[get_column_letter(col_idx)].width = 22 if col_idx > 1 else 16
     ws.freeze_panes = "A2"
     rules.freeze_panes = "A2"
-    ops.freeze_panes = "A2"
 
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)

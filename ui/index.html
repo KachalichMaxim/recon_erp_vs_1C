@@ -247,6 +247,14 @@
   }
   .matrix-table .money, .matrix-table .delta { text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; white-space: pre-line; }
   .matrix-table td.mono { white-space: pre-line; }
+  .matrix-table .sf-cell { padding-top: 5px; padding-bottom: 5px; }
+  .matrix-table .sf-lines {
+    max-height: 74px;
+    overflow: auto;
+    white-space: pre-line;
+    line-height: 1.35;
+    padding-right: 2px;
+  }
   .matrix-table .delta.pos, .matrix-table .delta.neg { color: oklch(0.42 0.15 25); }
   .matrix-row.parent td { font-weight: 650; background: var(--surface-2); }
   .matrix-row.level-0 td { background: oklch(0.965 0.006 85); }
@@ -876,7 +884,7 @@ const loadErpSnapshot = async () => {
     if (!resp.ok) throw new Error(`Не удалось загрузить fixture ${fixture}: HTTP ${resp.status}`);
     const payload = await resp.json();
     applyErpSnapshot(payload);
-    return { state: 'loaded', message: `Загружен референс ${fixture}` };
+    return { state: 'loaded', message: `Загружен контрольный набор ERP ${fixture}` };
   }
 
   const specId = getSpecId();
@@ -1615,7 +1623,7 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
                     <td className="money">{renderMoney(row, 'paymentSum')}</td>
                     <td className="money">{renderMoney(row, 'reimbursableSum')}</td>
                     <td className="money">{renderMoney(row, 'nonReimbursableSum')}</td>
-                    <td className="mono">{rowText(row, row.sfLabel)}</td>
+                    <td className="mono sf-cell"><div className="sf-lines">{rowText(row, row.sfLabel)}</div></td>
                     <td className={`delta ${row.showAmounts === false ? '' : deltaClass(row.delta)}`}>{renderMoney(row, 'delta')}</td>
                     <td className="matrix-status-cell">{renderBadges(row.badges)}</td>
                   </tr>
