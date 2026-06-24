@@ -376,7 +376,7 @@ function addRulesSheet(workbook) {
     [
       "Невозмещаемые расходы",
       "veda_spec_invoices + routines get_realizsum/get_profit",
-      "SELECT SUM(CASE\n         WHEN si.f_isvozm <> 1\n          AND NOT (get_expensessum(si.f_id) > 0 AND get_profit(si.f_id) < 0)\n         THEN get_profit(si.f_id)\n         ELSE 0 END) AS non_reimbursable_total\nFROM veda_spec_invoices si\nWHERE si.f_specid = :spec_id;",
+      "SELECT SUM(CASE\n         WHEN si.f_isvozm = 2\n          AND NOT (get_expensessum(si.f_id) > 0 AND get_profit(si.f_id) < 0)\n         THEN get_profit(si.f_id)\n         ELSE 0 END) AS non_reimbursable_total\nFROM veda_spec_invoices si\nWHERE si.f_specid = :spec_id;",
       "Агрегат по спецификации; исключаем расходные техоперации, которые не являются клиентским взаиморасчетом.",
       "Подтверждается реализацией/актами 1С по агентскому вознаграждению.",
     ],

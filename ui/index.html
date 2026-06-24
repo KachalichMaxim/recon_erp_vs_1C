@@ -113,6 +113,8 @@
   .chip.sum .dot { background: var(--sum-mismatch); }
   .chip.vat { background: var(--vat-bg); color: oklch(0.38 0.13 290); border-color: var(--vat-border); }
   .chip.vat .dot { background: var(--vat); }
+  .chip.fields, .chip.source-error { background: var(--miss-erp-bg); color: oklch(0.42 0.12 75); border-color: var(--miss-erp-border); }
+  .chip.fields .dot, .chip.source-error .dot { background: var(--miss-erp); }
   .chip.neutral { background: var(--bg-sunken); color: var(--muted); border-color: var(--border); }
   .chip.neutral .dot { background: var(--muted-2); }
   .chip.pending { background: var(--brand-bg); color: var(--brand-2); border-color: oklch(0.85 0.08 235); }
@@ -244,6 +246,7 @@
     box-shadow: 1px 0 0 var(--border);
   }
   .matrix-table .money, .matrix-table .delta { text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; white-space: nowrap; }
+  .matrix-table td.mono { white-space: pre-line; }
   .matrix-table .delta.pos, .matrix-table .delta.neg { color: oklch(0.42 0.15 25); }
   .matrix-row.parent td { font-weight: 650; background: var(--surface-2); }
   .matrix-row.level-0 td { background: oklch(0.965 0.006 85); }
@@ -289,7 +292,9 @@
   .matrix-badge.noerp { background: var(--miss-erp-bg); color: oklch(0.42 0.12 75); border-color: var(--miss-erp-border); }
   .matrix-badge.sum { background: var(--sum-mismatch-bg); color: oklch(0.4 0.15 25); border-color: var(--sum-mismatch-border); }
   .matrix-badge.nosf { background: var(--vat-bg); color: oklch(0.38 0.13 290); border-color: var(--vat-border); }
+  .matrix-badge.no-sf { background: var(--vat-bg); color: oklch(0.38 0.13 290); border-color: var(--vat-border); }
   .matrix-badge.nokey { background: var(--panel); color: var(--muted); border-color: var(--border-strong); }
+  .matrix-badge.fields, .matrix-badge.source-error { background: var(--miss-erp-bg); color: oklch(0.42 0.12 75); border-color: var(--miss-erp-border); }
   .matrix-badge.pending { background: var(--brand-bg); color: var(--brand-2); border-color: oklch(0.85 0.08 235); }
   .matrix-badge.limit { background: var(--bg-sunken); color: var(--ink-2); border-color: var(--border-strong); }
   .matrix-status-cell .matrix-badges { flex-wrap: wrap; overflow: visible; }
@@ -589,7 +594,7 @@ const DOCS = [
     opId: 'ERP-SCHETS-14994',
     opTitle: 'Счета покупателю из ERP veda_schets',
     status: 'match',
-    erp: { num: 'ВА-015695, ВА-015696, ВА-015697', date: '26.12.2024', amount: 166_901.52, kod1c: 'ERP-SCHETS-14994', vat: '—', invoice: '3 счета', reimbursement: 'Счет покупателю', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: 'ВА-015695, ВА-015696, ВА-015697', date: '26.12.2024', amount: 166_901.52, kod1c: 'ERP-SCHETS-14994', vat: '—', invoice: '3 счета', reimbursement: 'Счет покупателю', reimbursementId: 0, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: 'ВА-015695, ВА-015696, ВА-015697', date: '26.12.2024', amount: 166_901.52, kod1c: 'ERP-SCHETS-14994', vat: '—', doctype: 'Счет на оплату покупателю', invoice: '3 счета', dog: '660/1' },
   },
   {
@@ -599,7 +604,7 @@ const DOCS = [
     opId: 'ERP-PAID-14994',
     opTitle: 'ERP get_paidsum / veda_acchist_docs',
     status: 'match',
-    erp: { num: 'ПП 1866', date: '10.02.2025', amount: 833_921.00, kod1c: '00БП-001559', vat: '—', reimbursement: 'Оплата покупателя', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: 'ПП 1866', date: '10.02.2025', amount: 833_921.00, kod1c: '00БП-001559', vat: '—', reimbursement: 'Оплата покупателя', reimbursementId: 0, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: '00БП-001559', date: '10.02.2025', amount: 833_921.00, kod1c: '00БП-001559', vat: '—', doctype: 'Поступление на расчетный счет', dog: '660/1' },
   },
   {
@@ -609,7 +614,7 @@ const DOCS = [
     opId: 'ERP-REIMB-14994',
     opTitle: 'ERP get_expensessum: возмещаемые операции',
     status: 'match',
-    erp: { num: 'операции 9,10,12,13', date: '10.01.2025-23.01.2025', amount: 829_165.90, kod1c: 'ERP-REIMB-14994', vat: '—', reimbursement: 'Возмещаемые расходы', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: 'операции 9,10,12,13', date: '10.01.2025-23.01.2025', amount: 829_165.90, kod1c: 'ERP-REIMB-14994', vat: '—', reimbursement: 'Возмещаемые расходы', reimbursementId: 1, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: 'сумма строк 1С', date: '10.01.2025-23.01.2025', amount: 829_165.90, kod1c: 'ERP-REIMB-14994', vat: '—', doctype: 'Поступление/акты по возмещаемым', dog: '660/1' },
   },
   {
@@ -619,7 +624,7 @@ const DOCS = [
     opId: 'ERP-NONREIMB-14994',
     opTitle: 'ERP realization/profit: невозмещаемые услуги агента',
     status: 'match',
-    erp: { num: '00БП-000198', date: '21.01.2025', amount: 67_055.99, kod1c: '00БП-000198', vat: '20%', reimbursement: 'Невозмещаемые услуги Агента (Вознаграждение)', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: '00БП-000198', date: '21.01.2025', amount: 67_055.99, kod1c: '00БП-000198', vat: '20%', reimbursement: 'Невозмещаемые услуги Агента (Вознаграждение)', reimbursementId: 2, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: '00БП-000198', date: '21.01.2025', amount: 67_055.99, kod1c: '00БП-000198', vat: '20%', doctype: 'Реализация/УПД', dog: '660/1' },
   },
   {
@@ -629,7 +634,7 @@ const DOCS = [
     opId: 'ERP-SF-14994',
     opTitle: 'УПД/СФ по данным ERP и 1С',
     status: 'match',
-    erp: { num: '00БП-000198', date: '21.01.2025', amount: 0, kod1c: '00БП-000198', vat: '—', reimbursement: 'Счет-фактура / УПД' },
+    erp: { num: '00БП-000198', date: '21.01.2025', amount: 0, kod1c: '00БП-000198', vat: '—', reimbursement: 'Счет-фактура / УПД', reimbursementId: 0 },
     rc:  { num: '00БП-000198', date: '21.01.2025', amount: 0, kod1c: '00БП-000198', vat: '—', doctype: 'Счет-фактура / УПД' },
   },
 ];
@@ -696,7 +701,10 @@ const STATUS_META = {
   'miss-erp': { label: 'Нет в ЕРП',           color: 'miss-erp', short: 'ERP' },
   'miss-1c':  { label: 'Нет в 1С',            color: 'miss-1c',  short: '1C' },
   sum:      { label: 'Расхождение по сумме', color: 'sum',      short: '≠' },
-  vat:      { label: 'Возмещаемость НДС',    color: 'vat',      short: 'НДС' },
+  vat:      { label: 'Вопрос по НДС',        color: 'vat',      short: 'НДС' },
+  fields:   { label: 'Расходятся реквизиты', color: 'fields',   short: 'Поля' },
+  'no-sf':  { label: 'Нет СФ/УПД',            color: 'vat',      short: 'СФ' },
+  'source-error': { label: 'Ошибка источника 1С', color: 'source-error', short: '1C!' },
   'no-kod1c': { label: 'Нет ключа 1С',        color: 'no-kod1c', short: 'Код' },
   pending:  { label: 'Не сверено',            color: 'pending',  short: '?' },
 };
@@ -801,8 +809,10 @@ const normalizeDocFromSnapshot = (doc) => ({
     currency: doc.currency || '',
     kod1c: doc.code1c || doc.dog_code1c || '',
     vat: doc.nds_name || '—',
+    vatId: Number(doc.nds_id || doc.f_nds || 0),
     invoice: doc.invoice_number || '',
     reimbursement: doc.reimbursement_name || (doc.invoice_number ? `Счет ${doc.invoice_number}` : '—'),
+    reimbursementId: Number(doc.reimbursement_id || doc.f_isvozm || 0),
     dog: doc.dog_number || '',
     dogCode1c: doc.dog_code1c || '',
     isDetailLine: Boolean((!doc.code1c && doc.invoice_number) || doc.type_name === 'Строка агрегирующего счета'),
@@ -827,8 +837,10 @@ const normalizePaymentFromSnapshot = (payment) => ({
     currency: payment.currency || 'RUB',
     kod1c: payment.code1c || '',
     vat: payment.reimbursement_name || '—',
+    vatId: Number(payment.nds_id || payment.f_nds || 0),
     invoice: payment.invoice_number || '',
     reimbursement: payment.reimbursement_name || (payment.invoice_number ? `Счет ${payment.invoice_number}` : '—'),
+    reimbursementId: Number(payment.reimbursement_id || payment.f_isvozm || 0),
     dog: '',
     dogCode1c: '',
     isDetailLine: false,
@@ -881,7 +893,13 @@ const uiStatusFromApi = (status, fields = []) => {
   if (status === 'MATCH') return 'match';
   if (status === 'NOT_FOUND_IN_1C') return 'miss-1c';
   if (status === 'NOT_FOUND_IN_ERP') return 'miss-erp';
-  if (status === 'FIELDS_MISMATCH') return fields.includes('sum') ? 'sum' : 'vat';
+  if (status === 'SOURCE_ERROR_1C' || status === 'ONEC_SOURCE_ERROR') return 'source-error';
+  if (status === 'NO_SF_UPD' || status === 'NOT_FOUND_SF' || status === 'MISSING_SF') return 'no-sf';
+  if (status === 'FIELDS_MISMATCH') {
+    if (fields.includes('sum') || fields.includes('amount')) return 'sum';
+    if (fields.includes('vat') || fields.includes('nds') || fields.includes('vat_rate')) return 'vat';
+    return 'fields';
+  }
   if (status === 'NOT_COMPARABLE') return 'no-kod1c';
   return 'pending';
 };
@@ -898,8 +916,10 @@ const normalizeReportRowForUi = (row, index) => {
     currency: row.erp_currency || '',
     kod1c: row.erp_code1c || '',
     vat: row.erp_reimbursement || '—',
+    vatId: Number(row.erp_nds_id || row.erp_f_nds || 0),
     invoice: row.erp_invoice_number || '',
     reimbursement: row.erp_reimbursement || '',
+    reimbursementId: Number(row.erp_reimbursement_id || row.erp_f_isvozm || 0),
     dog: row.erp_dog_number || '',
     dogCode1c: row.erp_dog_code1c || '',
     isAggregated,
@@ -1015,6 +1035,10 @@ const compactList = (items, empty = '—') => {
   if (!values.length) return empty;
   return values.length > 2 ? `${values.slice(0, 2).join(', ')} +${values.length - 2}` : values.join(', ');
 };
+const multiLineList = (items, empty = '—') => {
+  const values = uniqueList(items);
+  return values.length ? values.join('\n') : empty;
+};
 const docAmount = (doc) => moneyValue(doc?.erp?.amount ?? doc?.rc?.amount);
 const docDate = (doc) => doc?.erp?.date || doc?.rc?.date || '';
 const docNumber = (doc) => doc?.erp?.num || doc?.rc?.num || doc?.erp?.kod1c || doc?.rc?.kod1c || '';
@@ -1039,18 +1063,21 @@ const isSfDoc = (doc) => {
   return label.includes('фактур') || label.includes('invoice') || /^сф[-\s]/i.test(doc?.erp?.num || '') || /^сф[-\s]/i.test(doc?.rc?.num || '');
 };
 const reimbursementKind = (doc) => {
-  const text = `${doc?.erp?.reimbursement || ''} ${doc?.erp?.vat || ''} ${doc?.opTitle || ''}`.toLowerCase();
-  if (text.includes('невозм')) return 'non';
-  if (text.includes('возмещ')) return 'reimb';
+  const value = Number(doc?.erp?.reimbursementId ?? doc?.reimbursementId ?? 0);
+  if (value === 1) return 'reimb';
+  if (value === 2) return 'non';
   return '';
 };
 const docStatusBadge = (status) => {
   if (status === 'match') return { key: 'ok', label: 'ОК' };
   if (status === 'limited') return { key: 'limit', label: 'Строка 1С' };
+  if (status === 'source-error') return { key: 'source-error', label: 'Ошибка 1С' };
   if (status === 'miss-1c') return { key: 'no1c', label: 'Нет в 1С' };
   if (status === 'miss-erp') return { key: 'noerp', label: 'Нет в ERP' };
   if (status === 'sum') return { key: 'sum', label: 'Сумма расходится' };
-  if (status === 'vat') return { key: 'nosf', label: 'Проверить НДС' };
+  if (status === 'vat') return { key: 'nosf', label: 'Вопрос по НДС' };
+  if (status === 'no-sf') return { key: 'no-sf', label: 'Нет СФ/УПД' };
+  if (status === 'fields') return { key: 'fields', label: 'Расходятся реквизиты' };
   if (status === 'no-kod1c') return { key: 'nokey', label: 'Нет ключа 1С' };
   return { key: 'pending', label: 'Не сверено' };
 };
@@ -1085,7 +1112,10 @@ const buildMatrixModel = () => {
     if ((issueCounts['miss-erp'] || 0) > 0) rowBadges.push({ key: 'noerp', label: `Нет в ERP ${issueCounts['miss-erp']}` });
     if ((issueCounts.sum || 0) > 0) rowBadges.push({ key: 'sum', label: 'Сумма расходится' });
     else if (Math.abs(delta) > 0.01) rowBadges.push({ key: 'sum', label: 'Есть остаток' });
-    if (sourceDocs.length > 0 && !sfDocs.length) rowBadges.push({ key: 'nosf', label: 'Нет СФ' });
+    if ((issueCounts.vat || 0) > 0) rowBadges.push({ key: 'nosf', label: 'Вопрос по НДС' });
+    if ((issueCounts['no-sf'] || 0) > 0) rowBadges.push({ key: 'no-sf', label: `Нет СФ/УПД ${issueCounts['no-sf']}` });
+    if ((issueCounts.fields || 0) > 0) rowBadges.push({ key: 'fields', label: 'Расходятся реквизиты' });
+    if ((issueCounts['source-error'] || 0) > 0) rowBadges.push({ key: 'source-error', label: 'Ошибка источника 1С' });
     if ((issueCounts.limited || 0) > 0) rowBadges.push({ key: 'limit', label: `Строка 1С ${issueCounts.limited}` });
     if ((issueCounts['no-kod1c'] || 0) > 0) rowBadges.push({ key: 'nokey', label: `Нет ключа 1С ${issueCounts['no-kod1c']}` });
     if ((issueCounts.pending || 0) > 0) rowBadges.push({ key: 'pending', label: `Не сверено ${issueCounts.pending}` });
@@ -1122,12 +1152,12 @@ const buildMatrixModel = () => {
       ? (pickMoney(settlements.customer_settlement_balance_rub, settlements.control_sheet_delta, balance.money_balance) ?? moneyValue(paymentSum - reimbursableSum - nonReimbursableSum))
       : moneyValue(paymentSum - reimbursableSum - nonReimbursableSum);
     return {
-      invoiceLabel: compactList(invoiceDocs.map(docNumber), invoiceDocs.length ? `${invoiceDocs.length} счет(ов)` : '—'),
+      invoiceLabel: multiLineList(invoiceDocs.map(docNumber), invoiceDocs.length ? `${invoiceDocs.length} счет(ов)` : '—'),
       invoiceSum,
       paymentSum,
       reimbursableSum,
       nonReimbursableSum,
-      sfLabel: compactList(sfDocs.map(docNumber), '—'),
+      sfLabel: multiLineList(sfDocs.map(docNumber), '—'),
       delta,
       badges: badgesForDocs(sourceDocs, delta, sfDocs),
       showAmounts: true,
@@ -2167,7 +2197,7 @@ const ReportRow = ({ rec, expanded, onToggle, onOpenDrawer, onCopy, onGotoOp, on
             {hasErp && <button className="btn sm" onClick={() => onGotoOp(rec.opId)}><IconExternal size={13}/>Открыть операцию {rec.opId}</button>}
             {!hasErp && rec.rc && <button className="btn sm brand" onClick={() => onLink(rec)}><IconLink size={13}/>Привязать документ к операции</button>}
             {rec.status === 'sum' && <button className="btn sm"><IconCheck size={13}/>Отметить проверено вручную</button>}
-            {rec.status === 'vat' && <button className="btn sm"><IconSparkle size={13}/>Проверить возмещаемость</button>}
+            {rec.status === 'vat' && <button className="btn sm"><IconSparkle size={13}/>Проверить НДС</button>}
             {rec.skipReason && <span className="chip neutral" style={{ alignSelf: 'center' }}><span className="dot"/>Не сверяется</span>}
             <button className="btn sm ghost" style={{ marginLeft: 'auto' }}>Игнорировать с комментарием</button>
           </div>
@@ -2191,6 +2221,9 @@ const SummaryStats = ({ docs, activeFilter, onFilter }) => {
     { key: 'miss-1c',  label: 'Нет в 1С',             count: (by['miss-1c'] || []).length,   swatch: 'var(--miss-1c)' },
     { key: 'sum',      label: 'Расхождение по сумме', count: (by['sum'] || []).length,       swatch: 'var(--sum-mismatch)' },
     { key: 'vat',      label: 'Вопрос по НДС',        count: (by['vat'] || []).length,       swatch: 'var(--vat)' },
+    { key: 'fields',   label: 'Реквизиты',            count: (by['fields'] || []).length,    swatch: 'var(--miss-erp)' },
+    { key: 'no-sf',    label: 'Нет СФ/УПД',           count: (by['no-sf'] || []).length,     swatch: 'var(--vat)' },
+    { key: 'source-error', label: 'Ошибка 1С',        count: (by['source-error'] || []).length, swatch: 'var(--miss-erp)' },
     { key: 'no-kod1c', label: 'Нет ключа 1С',         count: (by['no-kod1c'] || []).length,  swatch: 'var(--muted)' },
     { key: 'pending',  label: 'Не сверено',            count: (by['pending'] || []).length,   swatch: 'var(--brand)' },
   ];

@@ -3067,7 +3067,7 @@ def build_three_way_control(spec_id: int, spreadsheet_id: str = "", gid: str = "
             ],
             "control_excluded_cost_operations": [
                 op for op in (snapshot.get("operations") if isinstance(snapshot.get("operations"), list) else [])
-                if sql_int(op.get("reimbursement_id")) != 1
+                if sql_int(op.get("reimbursement_id")) == 2
                 and (normalize_sum(op.get("rp_expenses_sum")) or 0.0) > 0
                 and (normalize_sum(op.get("rp_profit_sum")) or 0.0) < 0
             ],
@@ -3120,13 +3120,12 @@ def compact_join(values: set[str], limit: int = 4) -> str:
     cleaned = sorted({normalize_text(value) for value in values if normalize_text(value)})
     if not cleaned:
         return ""
-    return "; ".join(cleaned[:limit]) + (f"; +{len(cleaned) - limit}" if len(cleaned) > limit else "")
+    return "; ".join(cleaned)
 
 
 def is_non_reimbursable(row: dict[str, object]) -> bool:
     reimbursement_id = sql_int(row.get("reimbursement_id"))
-    reimbursement_name = normalize_text(row.get("reimbursement_name")).lower()
-    return (reimbursement_id > 0 and reimbursement_id != 1) or "невозмещ" in reimbursement_name
+    return reimbursement_id == 2
 
 
 def act_group_key(row: dict[str, object]) -> tuple[object, ...]:
@@ -4848,14 +4847,14 @@ def build_settlements(
 ) -> dict[str, object]:
     schets = [doc for doc in erp_docs if doc.get("doc_kind") == "schet"]
     acts = [doc for doc in erp_docs if doc.get("doc_kind") == "act"]
-    buyer_schets = [doc for doc in schets if sql_int(doc.get("type_id")) == 2]
+    buyer_schets = [doc for doc in schets if sql_int(doc.get("type_id")) == 1]
     if not buyer_schets:
         buyer_schets = schets
 
     paid_incoming = [p for p in payments if p.get("direction") == "incoming"]
     paid_outgoing = [p for p in payments if p.get("direction") == "outgoing"]
     reimbursable_ops = [op for op in operations if sql_int(op.get("reimbursement_id")) == 1]
-    non_reimbursable_ops = [op for op in operations if sql_int(op.get("reimbursement_id")) != 1]
+    non_reimbursable_ops = [op for op in operations if sql_int(op.get("reimbursement_id")) == 2]
     add_nds_ops = [op for op in operations if sql_int(op.get("add_nds_flag")) == 1]
     control_excluded_cost_ops = [
         op for op in non_reimbursable_ops
