@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.pyc
+~$*
+*.inspect.ndjson
+node_modules/
+.env
+*.key
+*.pem
+*credentials*
+*secret*
+tonal-concord-*.json
