@@ -12,9 +12,16 @@
 - `screenshots/excel/` - PNG-рендер листов Excel.
 - `screenshots/ui/` - иллюстрации целевого интерфейса матрицы и экрана ошибок.
 
-## Проверка перед подготовкой финального ТЗ
+## Финальное ТЗ и проверочные материалы
 
-Перед передачей задачи PHP-разработчику необходимо проверить бизнес-логику на действующих ERP MariaDB и 1С:
+Финальный документ для передачи PHP-разработчику:
+
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.docx`;
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.pdf`.
+
+Документ описывает производственную доработку встроенного ERP-интерфейса, а не отдельный сервис: PHP ERP, MariaDB и существующий PHP/SOAP-слой 1С.
+
+Проверочные материалы, на которых основано ТЗ:
 
 - `docs/REQUIREMENTS_VALIDATION_BEFORE_TZ.md` — подтвержденные правила, требования к матрице, статусам, XLSX и перечень решений, которые должны войти в финальное ТЗ;
 - `docs/VALIDATION_PROTOCOL_ERP_1C.md` — протокол проверки связей, формул и SOAP-ответов на контрольных поставках.
@@ -41,7 +48,8 @@ npm test
 
 ## Исходники для трассировки
 
-- `tools/build_reconciliation_tz_docx.py` - генератор DOCX и иллюстраций.
+- `tools/build_final_developer_tz_docx.py` - актуальный генератор финального DOCX.
+- `tools/build_reconciliation_tz_docx.py` - предыдущий генератор DOCX и иллюстраций, оставлен как история макета.
 - `tools/build_aero_trade_reference_export.mjs` - генератор XLSX-выгрузки.
 - `reference/legacy_erp_to_1c_import_module.bsl` - фрагмент legacy 1C-сервиса, учтенный при описании требований.
 - `ui/index.html` - текущий HTML-макет матрицы.
