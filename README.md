@@ -6,8 +6,8 @@
 
 - `docs/TZ_ERP_1C_Akt_Sverki_Matrix.docx` - итоговое ТЗ.
 - `docs/TZ_ERP_1C_Akt_Sverki_Matrix.pdf` - PDF-рендер ТЗ для быстрого просмотра.
-- `exports/AERO_TRADE_660-1_reference_style_export.xlsx` - пример Excel-выгрузки в бухгалтерском формате.
-- `exports/AERO_TRADE_660-1_fresh_reference_export.xlsx` - свежая контрольная выгрузка по договору 660/1, строки референса 10401-10450.
+- `exports/AERO_TRADE_660-1_live_mariadb_reconciliation_20260624.xlsx` - live-выгрузка по договору 660/1, собранная SQL-запросами с сервера к MariaDB.
+- `reference/aero_trade_660_1_live_mariadb_report_20260624.json` - машинный протокол live-прогона: операции, счета, оплаты, закрывающие документы и суммы `get_*`.
 - `screenshots/docx/` - постраничный PNG-рендер ТЗ.
 - `screenshots/excel/` - PNG-рендер листов Excel.
 - `screenshots/ui/` - иллюстрации целевого интерфейса матрицы и экрана ошибок.
@@ -25,10 +25,10 @@
 
 - `docs/REQUIREMENTS_VALIDATION_BEFORE_TZ.md` — подтвержденные правила, требования к матрице, статусам, XLSX и перечень решений, которые должны войти в финальное ТЗ;
 - `docs/VALIDATION_PROTOCOL_ERP_1C.md` — протокол проверки связей, формул и SOAP-ответов на контрольных поставках.
-- `docs/AUTOMATED_MATRIX_REFERENCE_TESTS.md` — автоматические тесты референсной логики интерфейса, которые запускаются без MariaDB и 1С.
-- `docs/FRESH_AERO_TRADE_660_1_MARIADB_VALIDATION.md` — live-аудит свежего фрагмента договора 660/1: SQL-связи, суммы, исключенные подрядные расходы и артефакты проверки.
+- `docs/AUTOMATED_MATRIX_LIVE_TESTS.md` — автоматические тесты live-логики интерфейса, которые запускаются без нового подключения к MariaDB и 1С.
+- `docs/FRESH_AERO_TRADE_660_1_MARIADB_VALIDATION.md` — live-аудит контрольного набора договора 660/1: серверный запуск, SQL-связи, суммы `get_paidsum/get_realizsum`, остатки и артефакты проверки.
 
-Промышленный контур первой версии: PHP ERP + MariaDB + существующий PHP/SOAP-слой 1С. Внешние аналитические файлы и прототипы остаются только проверочными материалами бизнес-аналитика и не являются компонентами промышленной реализации.
+Промышленный контур первой версии: PHP ERP + MariaDB + существующий PHP/SOAP-слой 1С. Внешние аналитические файлы не являются компонентами промышленной реализации и не используются как источник данных для текущего пакета.
 
 Зафиксированные правила:
 
@@ -49,15 +49,15 @@ npm test
 ## Исходники для трассировки
 
 - `tools/build_final_developer_tz_docx.py` - актуальный генератор финального DOCX.
-- `tools/build_reconciliation_tz_docx.py` - предыдущий генератор DOCX и иллюстраций, оставлен как история макета.
-- `tools/build_aero_trade_reference_export.mjs` - генератор XLSX-выгрузки.
+- `tools/server_mariadb_reconciliation_report.py` - серверный скрипт live-проверки MariaDB и сборки JSON/CSV/XLSX.
+- `tools/render_live_excel_preview.mjs` - рендер live XLSX в PNG для вставки в ТЗ.
 - `reference/legacy_erp_to_1c_import_module.bsl` - фрагмент legacy 1C-сервиса, учтенный при описании требований.
 - `ui/index.html` - текущий HTML-макет матрицы.
 - `php_legacy/lib_1c_soap_layer.php` - legacy PHP-слой вызовов SOAP 1C (`c1c_getAkts`, `c1c_getAccHist`, `c1c_getcoacsu`, `c1c_getcoacsuinfo1C` и др.).
 - `php_legacy/rowsLib.php`, `php_legacy/class.php`, `php_legacy/printShablonFuntions.php` - ERP PHP-код с текущими SQL-связями поставок, счетов, актов, оплат и отчетных форм.
 - `api/reconciliation_api_server.redacted.py` - текущий прототип API матрицы сверки с редактированными параметрами подключения.
 - `sql/1c_reconciliation_schema.sql` - схема логирования запусков и результатов сверки.
-- `sql/PowerBI_master_spec_invoice_matrix.sql` - SQL-референс по матрице поставка/счет/операция.
+- `sql/PowerBI_master_spec_invoice_matrix.sql` - SQL-материал по матрице поставка/счет/операция.
 
 ## Что проверять в аудите
 
