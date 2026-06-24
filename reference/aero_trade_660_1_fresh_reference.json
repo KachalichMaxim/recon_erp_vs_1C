@@ -1,0 +1,584 @@
+{
+  "source": {
+    "spreadsheet_id": "1v50v2vM8Yqf7TeGQ4oY3tRZEvsDHs0lGW8_q0oQqfSE",
+    "sheet_name": "2020 договор 660/1",
+    "header_row": 2,
+    "extracted_at": "2026-06-24T09:18:23.387265+00:00"
+  },
+  "contract": {
+    "client_contact_id": 115,
+    "client_legal_id": 221,
+    "dog_id": 88,
+    "dog_number": "660/1",
+    "dog_code1c": "БП-003453"
+  },
+  "summary": {
+    "blocks_count": 8,
+    "line_rows_count": 25,
+    "payment_total_rub": 2268353.17,
+    "reimbursable_total_rub": 2152392.27,
+    "non_reimbursable_total_rub": 196372.85,
+    "delta_total_rub": -80411.95,
+    "invoice_breakdown": {
+      "RUB": 306527.42
+    }
+  },
+  "mariadb_audit": {},
+  "blocks": [
+    {
+      "source_start_row": 10401,
+      "label": "Заявка №1076",
+      "reimbursable_text": "445 565,75",
+      "non_reimbursable_text": "48 725,61 ₽",
+      "sf_text": "00БП-003300\t12.08.2025",
+      "delta_text": "-2 335,39 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10401,
+          "account": "ВА-007688",
+          "invoice_sum_text": "21 000,00",
+          "invoice_amount": 21000.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "21 000,00",
+          "payment_amount_rub": 21000.0
+        },
+        {
+          "source_row": 10402,
+          "account": "ВА-007689",
+          "invoice_sum_text": "5 298,00",
+          "invoice_amount": 5298.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "439 955,97",
+          "payment_amount_rub": 439955.97
+        },
+        {
+          "source_row": 10403,
+          "account": "ВА-007690",
+          "invoice_sum_text": "31 000,00",
+          "invoice_amount": 31000.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "31 000,00",
+          "payment_amount_rub": 31000.0
+        }
+      ],
+      "adjustments": [],
+      "spec_number": "1076",
+      "invoice_totals": {
+        "RUB": 57298.0
+      },
+      "payment_total_rub": 491955.97,
+      "reimbursable_base_rub": 445565.75,
+      "non_reimbursable_base_rub": 48725.61,
+      "reimbursable_adjustments_rub": 0,
+      "non_reimbursable_adjustments_rub": 0,
+      "reimbursable_rub": 445565.75,
+      "non_reimbursable_rub": 48725.61,
+      "delta_rub": -2335.39,
+      "calculated_delta_rub": -2335.39,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "00БП-003300\t12.08.2025",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    },
+    {
+      "source_start_row": 10408,
+      "label": "Заявка №1068",
+      "reimbursable_text": "408 437,47",
+      "non_reimbursable_text": "36 640,04 ₽",
+      "sf_text": "00БП-003301\t14.08.2025",
+      "delta_text": "-10 582,59 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10408,
+          "account": "ВА-007712",
+          "invoice_sum_text": "21 000,00",
+          "invoice_amount": 21000.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "21 000,00",
+          "payment_amount_rub": 21000.0
+        },
+        {
+          "source_row": 10409,
+          "account": "ВА-007713",
+          "invoice_sum_text": "4 700,00",
+          "invoice_amount": 4700.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "390 296,92",
+          "payment_amount_rub": 390296.92
+        },
+        {
+          "source_row": 10410,
+          "account": "ВА-007714",
+          "invoice_sum_text": "31 000,00",
+          "invoice_amount": 31000.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "31 000,00",
+          "payment_amount_rub": 31000.0
+        },
+        {
+          "source_row": 10411,
+          "account": "ВА-009459",
+          "invoice_sum_text": "17715",
+          "invoice_amount": 17715.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "",
+          "payment_amount_rub": null
+        }
+      ],
+      "adjustments": [
+        {
+          "source_row": 10411,
+          "reimbursable_text": "7 802,00",
+          "reimbursable_amount_rub": 7802.0,
+          "non_reimbursable_text": "",
+          "non_reimbursable_amount_rub": null,
+          "sf_text": "доп. отчет",
+          "delta_text": "",
+          "delta_amount_rub": null
+        }
+      ],
+      "spec_number": "1068",
+      "invoice_totals": {
+        "RUB": 74415.0
+      },
+      "payment_total_rub": 442296.92,
+      "reimbursable_base_rub": 408437.47,
+      "non_reimbursable_base_rub": 36640.04,
+      "reimbursable_adjustments_rub": 7802.0,
+      "non_reimbursable_adjustments_rub": 0.0,
+      "reimbursable_rub": 416239.47,
+      "non_reimbursable_rub": 36640.04,
+      "delta_rub": -10582.59,
+      "calculated_delta_rub": -10582.59,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "00БП-003301\t14.08.2025\nдоп. отчет",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    },
+    {
+      "source_start_row": 10415,
+      "label": "Заявка №1063",
+      "reimbursable_text": "182 090,87",
+      "non_reimbursable_text": "14 900,65 ₽",
+      "sf_text": "00БП-003266\t06.08.2025",
+      "delta_text": "-25 496,96 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10415,
+          "account": "ВА-007482",
+          "invoice_sum_text": "9 781,63",
+          "invoice_amount": 9781.63,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "9 781,63",
+          "payment_amount_rub": 9781.63
+        },
+        {
+          "source_row": 10416,
+          "account": "ВА-007483",
+          "invoice_sum_text": "1 925,00",
+          "invoice_amount": 1925.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "152 521,94",
+          "payment_amount_rub": 152521.94
+        },
+        {
+          "source_row": 10417,
+          "account": "ВА-007484",
+          "invoice_sum_text": "12 282,00",
+          "invoice_amount": 12282.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "12 282,00",
+          "payment_amount_rub": 12282.0
+        }
+      ],
+      "adjustments": [
+        {
+          "source_row": 10419,
+          "reimbursable_text": "3 091,01",
+          "reimbursable_amount_rub": 3091.01,
+          "non_reimbursable_text": "",
+          "non_reimbursable_amount_rub": null,
+          "sf_text": "доп. отчет от 14.08.2025",
+          "delta_text": "",
+          "delta_amount_rub": null
+        }
+      ],
+      "spec_number": "1063",
+      "invoice_totals": {
+        "RUB": 23988.63
+      },
+      "payment_total_rub": 174585.57,
+      "reimbursable_base_rub": 182090.87,
+      "non_reimbursable_base_rub": 14900.65,
+      "reimbursable_adjustments_rub": 3091.01,
+      "non_reimbursable_adjustments_rub": 0.0,
+      "reimbursable_rub": 185181.88,
+      "non_reimbursable_rub": 14900.65,
+      "delta_rub": -25496.96,
+      "calculated_delta_rub": -25496.96,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "00БП-003266\t06.08.2025\nдоп. отчет от 14.08.2025",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    },
+    {
+      "source_start_row": 10422,
+      "label": "Заявка №1064",
+      "reimbursable_text": "122 497,40",
+      "non_reimbursable_text": "10 027,64 ₽",
+      "sf_text": "00БП-003274        06.08.2025",
+      "delta_text": "-17 158,70 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10422,
+          "account": "ВА-007509",
+          "invoice_sum_text": "6 574,94",
+          "invoice_amount": 6574.94,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "6 574,94",
+          "payment_amount_rub": 6574.94
+        },
+        {
+          "source_row": 10423,
+          "account": "ВА-007510",
+          "invoice_sum_text": "1 295,00",
+          "invoice_amount": 1295.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "102 605,67",
+          "payment_amount_rub": 102605.67
+        },
+        {
+          "source_row": 10424,
+          "account": "ВА-007511",
+          "invoice_sum_text": "8 266,00",
+          "invoice_amount": 8266.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "8 266,00",
+          "payment_amount_rub": 8266.0
+        }
+      ],
+      "adjustments": [
+        {
+          "source_row": 10426,
+          "reimbursable_text": "2 080,27",
+          "reimbursable_amount_rub": 2080.27,
+          "non_reimbursable_text": "",
+          "non_reimbursable_amount_rub": null,
+          "sf_text": "доп. отчет от 14.08.2025",
+          "delta_text": "",
+          "delta_amount_rub": null
+        }
+      ],
+      "spec_number": "1064",
+      "invoice_totals": {
+        "RUB": 16135.94
+      },
+      "payment_total_rub": 117446.61,
+      "reimbursable_base_rub": 122497.4,
+      "non_reimbursable_base_rub": 10027.64,
+      "reimbursable_adjustments_rub": 2080.27,
+      "non_reimbursable_adjustments_rub": 0.0,
+      "reimbursable_rub": 124577.67,
+      "non_reimbursable_rub": 10027.64,
+      "delta_rub": -17158.7,
+      "calculated_delta_rub": -17158.7,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "00БП-003274        06.08.2025\nдоп. отчет от 14.08.2025",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    },
+    {
+      "source_start_row": 10429,
+      "label": "Заявка №1065",
+      "reimbursable_text": "155 723,73",
+      "non_reimbursable_text": "12 681,23 ₽",
+      "sf_text": "00БП-003279\t06.08.2025",
+      "delta_text": "-21 699,52 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10429,
+          "account": "ВА-007505",
+          "invoice_sum_text": "9 100,85",
+          "invoice_amount": 9100.85,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "9 100,85",
+          "payment_amount_rub": 9100.85
+        },
+        {
+          "source_row": 10430,
+          "account": "ВА-007506",
+          "invoice_sum_text": "1 638,00",
+          "invoice_amount": 1638.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "129 782,31",
+          "payment_amount_rub": 129782.31
+        },
+        {
+          "source_row": 10431,
+          "account": "ВА-007507",
+          "invoice_sum_text": "10 453,00",
+          "invoice_amount": 10453.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "10 453,00",
+          "payment_amount_rub": 10453.0
+        }
+      ],
+      "adjustments": [
+        {
+          "source_row": 10433,
+          "reimbursable_text": "2 630,72",
+          "reimbursable_amount_rub": 2630.72,
+          "non_reimbursable_text": "",
+          "non_reimbursable_amount_rub": null,
+          "sf_text": "доп. отчет от 14.08.2025",
+          "delta_text": "",
+          "delta_amount_rub": null
+        }
+      ],
+      "spec_number": "1065",
+      "invoice_totals": {
+        "RUB": 21191.85
+      },
+      "payment_total_rub": 149336.16,
+      "reimbursable_base_rub": 155723.73,
+      "non_reimbursable_base_rub": 12681.23,
+      "reimbursable_adjustments_rub": 2630.72,
+      "non_reimbursable_adjustments_rub": 0.0,
+      "reimbursable_rub": 158354.45,
+      "non_reimbursable_rub": 12681.23,
+      "delta_rub": -21699.52,
+      "calculated_delta_rub": -21699.52,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "00БП-003279\t06.08.2025\nдоп. отчет от 14.08.2025",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    },
+    {
+      "source_start_row": 10436,
+      "label": "Заявка №1072",
+      "reimbursable_text": "267 458,81",
+      "non_reimbursable_text": "26 049,03 ₽",
+      "sf_text": "00БП-003284\t07.08.2025",
+      "delta_text": "5 274,47 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10436,
+          "account": "ВА-007691",
+          "invoice_sum_text": "14 882,00",
+          "invoice_amount": 14882.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "14 882,00",
+          "payment_amount_rub": 14882.0
+        },
+        {
+          "source_row": 10437,
+          "account": "ВА-007692",
+          "invoice_sum_text": "3 400,00",
+          "invoice_amount": 3400.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "282 342,45",
+          "payment_amount_rub": 282342.45
+        },
+        {
+          "source_row": 10438,
+          "account": "ВА-007693",
+          "invoice_sum_text": "21 969,00",
+          "invoice_amount": 21969.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "21 969,00",
+          "payment_amount_rub": 21969.0
+        }
+      ],
+      "adjustments": [
+        {
+          "source_row": 10440,
+          "reimbursable_text": "20 411,14",
+          "reimbursable_amount_rub": 20411.14,
+          "non_reimbursable_text": "",
+          "non_reimbursable_amount_rub": null,
+          "sf_text": "Доп. отчет от 08.08.2025",
+          "delta_text": "",
+          "delta_amount_rub": null
+        }
+      ],
+      "spec_number": "1072",
+      "invoice_totals": {
+        "RUB": 40251.0
+      },
+      "payment_total_rub": 319193.45,
+      "reimbursable_base_rub": 267458.81,
+      "non_reimbursable_base_rub": 26049.03,
+      "reimbursable_adjustments_rub": 20411.14,
+      "non_reimbursable_adjustments_rub": 0.0,
+      "reimbursable_rub": 287869.95,
+      "non_reimbursable_rub": 26049.03,
+      "delta_rub": 5274.47,
+      "calculated_delta_rub": 5274.47,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "00БП-003284\t07.08.2025\nДоп. отчет от 08.08.2025",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    },
+    {
+      "source_start_row": 10443,
+      "label": "Заявка №1073",
+      "reimbursable_text": "109 972,77",
+      "non_reimbursable_text": "10 708,61 ₽",
+      "sf_text": "00БП-003287\t07.08.2025",
+      "delta_text": "2 169,33 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10443,
+          "account": "ВА-007699",
+          "invoice_sum_text": "6 118,00",
+          "invoice_amount": 6118.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "6 118,00",
+          "payment_amount_rub": 6118.0
+        },
+        {
+          "source_row": 10444,
+          "account": "ВА-007700",
+          "invoice_sum_text": "1 398,00",
+          "invoice_amount": 1398.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "116 092,57",
+          "payment_amount_rub": 116092.57
+        },
+        {
+          "source_row": 10445,
+          "account": "ВА-007701",
+          "invoice_sum_text": "9 031,00",
+          "invoice_amount": 9031.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "9 031,00",
+          "payment_amount_rub": 9031.0
+        }
+      ],
+      "adjustments": [
+        {
+          "source_row": 10447,
+          "reimbursable_text": "8 390,86",
+          "reimbursable_amount_rub": 8390.86,
+          "non_reimbursable_text": "",
+          "non_reimbursable_amount_rub": null,
+          "sf_text": "Доп. отчет от 08.08.2025",
+          "delta_text": "",
+          "delta_amount_rub": null
+        }
+      ],
+      "spec_number": "1073",
+      "invoice_totals": {
+        "RUB": 16547.0
+      },
+      "payment_total_rub": 131241.57,
+      "reimbursable_base_rub": 109972.77,
+      "non_reimbursable_base_rub": 10708.61,
+      "reimbursable_adjustments_rub": 8390.86,
+      "non_reimbursable_adjustments_rub": 0.0,
+      "reimbursable_rub": 118363.63,
+      "non_reimbursable_rub": 10708.61,
+      "delta_rub": 2169.33,
+      "calculated_delta_rub": 2169.33,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "00БП-003287\t07.08.2025\nДоп. отчет от 08.08.2025",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    },
+    {
+      "source_start_row": 10450,
+      "label": "Заявка №1074",
+      "reimbursable_text": "416 239,47",
+      "non_reimbursable_text": "36 640,04 ₽",
+      "sf_text": "упд 3286 от 05.08.2025",
+      "delta_text": "-10 582,59 ₽",
+      "cb_goods_marker": "*",
+      "lines": [
+        {
+          "source_row": 10450,
+          "account": "ВА-007696",
+          "invoice_sum_text": "21 000,00",
+          "invoice_amount": 21000.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "21 000,00",
+          "payment_amount_rub": 21000.0
+        },
+        {
+          "source_row": 10451,
+          "account": "ВА-007697",
+          "invoice_sum_text": "4 700,00",
+          "invoice_amount": 4700.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "390296,92",
+          "payment_amount_rub": 390296.92
+        },
+        {
+          "source_row": 10452,
+          "account": "ВА-007698",
+          "invoice_sum_text": "31 000,00",
+          "invoice_amount": 31000.0,
+          "invoice_currency": "RUB",
+          "payment_sum_text": "31000,00",
+          "payment_amount_rub": 31000.0
+        }
+      ],
+      "adjustments": [],
+      "spec_number": "1074",
+      "invoice_totals": {
+        "RUB": 56700.0
+      },
+      "payment_total_rub": 442296.92,
+      "reimbursable_base_rub": 416239.47,
+      "non_reimbursable_base_rub": 36640.04,
+      "reimbursable_adjustments_rub": 0,
+      "non_reimbursable_adjustments_rub": 0,
+      "reimbursable_rub": 416239.47,
+      "non_reimbursable_rub": 36640.04,
+      "delta_rub": -10582.59,
+      "calculated_delta_rub": -10582.59,
+      "delta_check_diff_rub": 0.0,
+      "sf_full_text": "упд 3286 от 05.08.2025",
+      "status": [
+        {
+          "key": "sum",
+          "label": "Остаток"
+        }
+      ]
+    }
+  ]
+}

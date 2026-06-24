@@ -1,0 +1,341 @@
+{
+  "source": "google_reference",
+  "sourceState": "reference",
+  "sourceLabel": "Референс бухгалтера · лист «2020 договор 660/1»",
+  "delivery": {
+    "spec_id": "contract-660-1-reference",
+    "spec_number": "660/1",
+    "client_name": "АЭРО-ТРЕЙД",
+    "client_inn": "7811451960",
+    "main_dog_number": "660/1",
+    "main_dog_code1c": "БП-003453",
+    "goods_name": "Бухгалтерская ведомость по договору 660/1"
+  },
+  "matrix_model": {
+    "clients": [
+      {
+        "id": "reference-client-115",
+        "name": "АЭРО-ТРЕЙД",
+        "inn": "7811451960",
+        "root": {
+          "id": "reference-client-115",
+          "kind": "client",
+          "level": 0,
+          "name": "Клиент: АЭРО-ТРЕЙД",
+          "note": "ИНН 7811451960",
+          "specNo": "1 ЮЛ",
+          "isParent": true,
+          "defaultExpanded": true,
+          "children": [
+            {
+              "id": "reference-legal-221",
+              "kind": "legal",
+              "level": 1,
+              "name": "ЮЛ: АЭРО-ТРЕЙД",
+              "note": "ИНН 7811451960",
+              "specNo": "1 договор",
+              "isParent": true,
+              "defaultExpanded": true,
+              "children": [
+                {
+                  "id": "reference-contract-660-1",
+                  "kind": "contract",
+                  "level": 2,
+                  "name": "Договор: 660/1",
+                  "note": "ERP dog_id=88, код 1С БП-003453; лист «2020 договор 660/1»",
+                  "specNo": "8 спецификаций",
+                  "isParent": true,
+                  "defaultExpanded": true,
+                  "children": [
+                    {
+                      "id": "reference-spec-10401",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1076",
+                      "note": "строка листа 10401",
+                      "specNo": "1076",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007688\nВА-007689\nВА-007690",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "21 000,00\n5 298,00\n31 000,00",
+                      "paymentSum": 491955.97,
+                      "paymentSumLabel": "21 000,00\n439 955,97\n31 000,00",
+                      "reimbursableSum": 445565.75,
+                      "nonReimbursableSum": 48725.61,
+                      "sfLabel": "00БП-003300\t12.08.2025",
+                      "delta": -2335.39,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    },
+                    {
+                      "id": "reference-spec-10408",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1068",
+                      "note": "строка листа 10408",
+                      "specNo": "1068",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007712\nВА-007713\nВА-007714\nВА-009459",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "21 000,00\n4 700,00\n31 000,00\n17715",
+                      "paymentSum": 442296.92,
+                      "paymentSumLabel": "21 000,00\n390 296,92\n31 000,00\n—",
+                      "reimbursableSum": 416239.47,
+                      "nonReimbursableSum": 36640.04,
+                      "sfLabel": "00БП-003301\t14.08.2025\nдоп. отчет",
+                      "delta": -10582.59,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    },
+                    {
+                      "id": "reference-spec-10415",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1063",
+                      "note": "строка листа 10415",
+                      "specNo": "1063",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007482\nВА-007483\nВА-007484",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "9 781,63\n1 925,00\n12 282,00",
+                      "paymentSum": 174585.57,
+                      "paymentSumLabel": "9 781,63\n152 521,94\n12 282,00",
+                      "reimbursableSum": 185181.88,
+                      "nonReimbursableSum": 14900.65,
+                      "sfLabel": "00БП-003266\t06.08.2025\nдоп. отчет от 14.08.2025",
+                      "delta": -25496.96,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    },
+                    {
+                      "id": "reference-spec-10422",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1064",
+                      "note": "строка листа 10422",
+                      "specNo": "1064",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007509\nВА-007510\nВА-007511",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "6 574,94\n1 295,00\n8 266,00",
+                      "paymentSum": 117446.61,
+                      "paymentSumLabel": "6 574,94\n102 605,67\n8 266,00",
+                      "reimbursableSum": 124577.67,
+                      "nonReimbursableSum": 10027.64,
+                      "sfLabel": "00БП-003274        06.08.2025\nдоп. отчет от 14.08.2025",
+                      "delta": -17158.7,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    },
+                    {
+                      "id": "reference-spec-10429",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1065",
+                      "note": "строка листа 10429",
+                      "specNo": "1065",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007505\nВА-007506\nВА-007507",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "9 100,85\n1 638,00\n10 453,00",
+                      "paymentSum": 149336.16,
+                      "paymentSumLabel": "9 100,85\n129 782,31\n10 453,00",
+                      "reimbursableSum": 158354.45,
+                      "nonReimbursableSum": 12681.23,
+                      "sfLabel": "00БП-003279\t06.08.2025\nдоп. отчет от 14.08.2025",
+                      "delta": -21699.52,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    },
+                    {
+                      "id": "reference-spec-10436",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1072",
+                      "note": "строка листа 10436",
+                      "specNo": "1072",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007691\nВА-007692\nВА-007693",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "14 882,00\n3 400,00\n21 969,00",
+                      "paymentSum": 319193.45,
+                      "paymentSumLabel": "14 882,00\n282 342,45\n21 969,00",
+                      "reimbursableSum": 287869.95,
+                      "nonReimbursableSum": 26049.03,
+                      "sfLabel": "00БП-003284\t07.08.2025\nДоп. отчет от 08.08.2025",
+                      "delta": 5274.47,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    },
+                    {
+                      "id": "reference-spec-10443",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1073",
+                      "note": "строка листа 10443",
+                      "specNo": "1073",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007699\nВА-007700\nВА-007701",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "6 118,00\n1 398,00\n9 031,00",
+                      "paymentSum": 131241.57,
+                      "paymentSumLabel": "6 118,00\n116 092,57\n9 031,00",
+                      "reimbursableSum": 118363.63,
+                      "nonReimbursableSum": 10708.61,
+                      "sfLabel": "00БП-003287\t07.08.2025\nДоп. отчет от 08.08.2025",
+                      "delta": 2169.33,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    },
+                    {
+                      "id": "reference-spec-10450",
+                      "kind": "spec",
+                      "level": 3,
+                      "name": "Заявка №1074",
+                      "note": "строка листа 10450",
+                      "specNo": "1074",
+                      "isParent": false,
+                      "defaultExpanded": false,
+                      "detailDocs": [],
+                      "invoiceLabel": "ВА-007696\nВА-007697\nВА-007698",
+                      "invoiceSum": null,
+                      "invoiceSumLabel": "21 000,00\n4 700,00\n31 000,00",
+                      "paymentSum": 442296.92,
+                      "paymentSumLabel": "21 000,00\n390296,92\n31000,00",
+                      "reimbursableSum": 416239.47,
+                      "nonReimbursableSum": 36640.04,
+                      "sfLabel": "упд 3286 от 05.08.2025",
+                      "delta": -10582.59,
+                      "badges": [
+                        {
+                          "key": "sum",
+                          "label": "Остаток"
+                        }
+                      ],
+                      "showAmounts": true
+                    }
+                  ],
+                  "invoiceSum": null,
+                  "invoiceSumLabel": "306 527,42 р.",
+                  "paymentSum": 2268353.17,
+                  "reimbursableSum": 2152392.27,
+                  "nonReimbursableSum": 196372.85,
+                  "delta": -80411.95,
+                  "badges": [
+                    {
+                      "key": "sum",
+                      "label": "Ост.: 8"
+                    }
+                  ],
+                  "showAmounts": true
+                }
+              ],
+              "invoiceSum": null,
+              "invoiceSumLabel": "306 527,42 р.",
+              "paymentSum": 2268353.17,
+              "reimbursableSum": 2152392.27,
+              "nonReimbursableSum": 196372.85,
+              "delta": -80411.95,
+              "badges": [
+                {
+                  "key": "sum",
+                  "label": "Ост.: 8"
+                }
+              ],
+              "showAmounts": true
+            }
+          ],
+          "invoiceSum": null,
+          "invoiceSumLabel": "306 527,42 р.",
+          "paymentSum": 2268353.17,
+          "reimbursableSum": 2152392.27,
+          "nonReimbursableSum": 196372.85,
+          "delta": -80411.95,
+          "badges": [
+            {
+              "key": "sum",
+              "label": "Ост.: 8"
+            }
+          ],
+          "showAmounts": true
+        }
+      }
+    ],
+    "totals": {
+      "invoiceSum": null,
+      "invoiceSumLabel": "306 527,42 р.",
+      "paymentSum": 2268353.17,
+      "reimbursableSum": 2152392.27,
+      "nonReimbursableSum": 196372.85,
+      "delta": -80411.95,
+      "badges": [
+        {
+          "key": "sum",
+          "label": "Ост.: 8"
+        }
+      ],
+      "showAmounts": true
+    },
+    "rowsCount": 25,
+    "sourceLabel": "Референс бухгалтера · MariaDB audit"
+  },
+  "reference": {
+    "spreadsheet_id": "1v50v2vM8Yqf7TeGQ4oY3tRZEvsDHs0lGW8_q0oQqfSE",
+    "sheet_name": "2020 договор 660/1",
+    "blocks_count": 8,
+    "line_rows_count": 25,
+    "invoice_breakdown": {
+      "RUB": 306527.42
+    },
+    "mariadb_audit": {}
+  }
+}

@@ -217,7 +217,7 @@
   .matrix-kpi .l { color: var(--muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; line-height: 1.2; }
   .matrix-shell { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
   .matrix-scroll { overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 220px); min-height: 0; }
-  .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 11.5px; }
+  .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 11px; }
   .matrix-table th {
     position: sticky;
     top: 0;
@@ -225,11 +225,11 @@
     background: oklch(0.9 0.006 85);
     color: var(--ink-2);
     text-align: left;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.045em;
-    padding: 8px 7px;
+    padding: 7px 5px;
     border-bottom: 1px solid var(--border-strong);
     white-space: normal;
     line-height: 1.15;
@@ -237,7 +237,7 @@
   }
   .matrix-table th .th-wrap { display: inline-block; min-width: 0; }
   .matrix-table th:first-child { left: 0; z-index: 5; }
-  .matrix-table td { padding: 7px 7px; border-bottom: 1px solid var(--border); background: var(--surface); vertical-align: middle; }
+  .matrix-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); background: var(--surface); vertical-align: middle; }
   .matrix-table tr:hover td { background: var(--surface-2); }
   .matrix-table .sticky-col {
     position: sticky;
@@ -245,7 +245,7 @@
     z-index: 2;
     box-shadow: 1px 0 0 var(--border);
   }
-  .matrix-table .money, .matrix-table .delta { text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; white-space: nowrap; }
+  .matrix-table .money, .matrix-table .delta { text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; white-space: pre-line; }
   .matrix-table td.mono { white-space: pre-line; }
   .matrix-table .delta.pos, .matrix-table .delta.neg { color: oklch(0.42 0.15 25); }
   .matrix-row.parent td { font-weight: 650; background: var(--surface-2); }
@@ -762,6 +762,7 @@ window.ERP_SNAPSHOT = {
 const params = new URLSearchParams(window.location.search);
 const getApiBase = () => (params.get('api') || '').replace(/\/$/, '');
 const getSpecId = () => params.get('spec_id') || params.get('specId') || params.get('id') || '';
+const getFixtureName = () => params.get('fixture') || params.get('reference') || '';
 const apiUrl = (path) => `${getApiBase()}${path}`;
 const getOneCTemplateUrl = () => apiUrl('/akt_sverki/templates/1c_reconciliation_upload_template.xlsx');
 window.RECONCILIATION_REPORT = null;
@@ -869,6 +870,15 @@ const applyErpSnapshot = (snapshot) => {
 };
 
 const loadErpSnapshot = async () => {
+  const fixture = getFixtureName();
+  if (fixture) {
+    const resp = await fetch(`./reference/${encodeURIComponent(fixture)}.json`);
+    if (!resp.ok) throw new Error(`Не удалось загрузить fixture ${fixture}: HTTP ${resp.status}`);
+    const payload = await resp.json();
+    applyErpSnapshot(payload);
+    return { state: 'loaded', message: `Загружен референс ${fixture}` };
+  }
+
   const specId = getSpecId();
   if (!specId) return { state: 'mock', message: 'Откройте страницу с ?spec_id=<ID заявки>, чтобы подтянуть ERP-данные.' };
   const resp = await fetch(apiUrl(`/api/reconciliation/erp-snapshot?spec_id=${encodeURIComponent(specId)}`));
@@ -1084,6 +1094,9 @@ const docStatusBadge = (status) => {
 
 const buildMatrixModel = () => {
   const snapshot = window.ERP_SNAPSHOT || {};
+  if (snapshot.matrix_model && Array.isArray(snapshot.matrix_model.clients)) {
+    return snapshot.matrix_model;
+  }
   const deliveryRaw = snapshot.delivery || {};
   const delivery = window.DELIVERY || {};
   const docs = Array.isArray(window.DOCS) ? window.DOCS : [];
@@ -1431,8 +1444,18 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
   if (selected?.root) addRows(selected.root);
 
   const rowText = (row, value) => row.showAmounts === false ? '—' : (value || '—');
-  const rowMoneyText = (row, value) => row.showAmounts === false ? '—' : fmtMoney(value);
-  const renderMoney = (row, value) => <span className="mono">{rowMoneyText(row, value)}</span>;
+  const rowMoneyText = (row, key) => {
+    if (row.showAmounts === false) return '—';
+    const label = row[`${key}Label`];
+    if (label !== undefined && label !== null && String(label).trim() !== '') return label;
+    return fmtMoney(row[key]);
+  };
+  const totalMoneyText = (key) => {
+    const label = model.totals?.[`${key}Label`];
+    if (label !== undefined && label !== null && String(label).trim() !== '') return label;
+    return fmtMoney(model.totals?.[key]);
+  };
+  const renderMoney = (row, key) => <span className="mono">{rowMoneyText(row, key)}</span>;
   const renderBadges = (badges) => (
     <div className="matrix-badges">
       {(badges || []).map((b, idx) => <span className={`matrix-badge ${b.key}`} key={`${b.key}-${idx}`}>{b.label}</span>)}
@@ -1455,12 +1478,12 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
     'Иерархия': `${'  '.repeat(row.level)}${row.name}${row.note ? ` (${row.note})` : ''}`,
     '№ спецификации': row.specNo || '',
     'Счет': rowText(row, row.invoiceLabel),
-    'Сумма по счету': rowMoneyText(row, row.invoiceSum),
-    'Сумма оплаты': rowMoneyText(row, row.paymentSum),
-    'Возмещаемые расходы': rowMoneyText(row, row.reimbursableSum),
-    'Невозмещаемые расходы': rowMoneyText(row, row.nonReimbursableSum),
+    'Сумма по счету': rowMoneyText(row, 'invoiceSum'),
+    'Сумма оплаты': rowMoneyText(row, 'paymentSum'),
+    'Возмещаемые расходы': rowMoneyText(row, 'reimbursableSum'),
+    'Невозмещаемые расходы': rowMoneyText(row, 'nonReimbursableSum'),
     '№ счф': rowText(row, row.sfLabel),
-    '(+/-)': rowMoneyText(row, row.delta),
+    '(+/-)': rowMoneyText(row, 'delta'),
     'Статус': (row.badges || []).map(b => b.label).join(', '),
   }));
   const serializeMatrix = (separator) => {
@@ -1530,37 +1553,37 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
       </div>
 
       <div className="matrix-kpis">
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.invoiceSum)}</div><div className="l">Сумма по счетам</div></div>
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.paymentSum)}</div><div className="l">Сумма оплат</div></div>
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.reimbursableSum)}</div><div className="l">Возмещаемые расходы</div></div>
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.nonReimbursableSum)}</div><div className="l">Невозмещаемые расходы</div></div>
-        <div className="matrix-kpi"><div className={`v mono ${deltaClass(model.totals.delta)}`}>{fmtMoney(model.totals.delta)}</div><div className="l">(+/-) оплат-расходы</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('invoiceSum')}</div><div className="l">Сумма по счетам</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('paymentSum')}</div><div className="l">Сумма оплат</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('reimbursableSum')}</div><div className="l">Возмещаемые расходы</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('nonReimbursableSum')}</div><div className="l">Невозмещаемые расходы</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${deltaClass(model.totals.delta)}`}>{totalMoneyText('delta')}</div><div className="l">(+/-) оплат-расходы</div></div>
       </div>
 
       <div className="matrix-shell">
         <div className="matrix-scroll">
           <table className="matrix-table">
             <colgroup>
-              <col style={{ width: '24%' }}/>
-              <col style={{ width: '8%' }}/>
-              <col style={{ width: '8%' }}/>
+              <col style={{ width: '21%' }}/>
+              <col style={{ width: '5.8%' }}/>
               <col style={{ width: '10%' }}/>
-              <col style={{ width: '9%' }}/>
-              <col style={{ width: '10%' }}/>
+              <col style={{ width: '9.2%' }}/>
+              <col style={{ width: '9.7%' }}/>
+              <col style={{ width: '10.2%' }}/>
+              <col style={{ width: '10.7%' }}/>
               <col style={{ width: '11%' }}/>
-              <col style={{ width: '7%' }}/>
-              <col style={{ width: '5%' }}/>
-              <col style={{ width: '8%' }}/>
+              <col style={{ width: '6.6%' }}/>
+              <col style={{ width: '5.8%' }}/>
             </colgroup>
             <thead>
               <tr>
                 <th className="sticky-col"><span className="th-wrap">Иерархия</span></th>
-                <th><span className="th-wrap">№<br/>спецификации</span></th>
+                <th><span className="th-wrap">№<br/>спец.</span></th>
                 <th><span className="th-wrap">Счет</span></th>
                 <th style={{ textAlign: 'right' }}><span className="th-wrap">Сумма<br/>по счету</span></th>
                 <th style={{ textAlign: 'right' }}><span className="th-wrap">Сумма<br/>оплаты</span></th>
-                <th style={{ textAlign: 'right' }}><span className="th-wrap">Возмещаемые<br/>расходы</span></th>
-                <th style={{ textAlign: 'right' }}><span className="th-wrap">Невозмещаемые<br/>расходы</span></th>
+                <th style={{ textAlign: 'right' }}><span className="th-wrap">Возм.<br/>расходы</span></th>
+                <th style={{ textAlign: 'right' }}><span className="th-wrap">Невозм.<br/>расходы</span></th>
                 <th><span className="th-wrap">№<br/>счф</span></th>
                 <th style={{ textAlign: 'right' }}><span className="th-wrap">(+/-)<br/>опл.-расх.</span></th>
                 <th><span className="th-wrap">Статус</span></th>
@@ -1588,12 +1611,12 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
                     </td>
                     <td className="mono">{row.specNo || '—'}</td>
                     <td className="mono">{rowText(row, row.invoiceLabel)}</td>
-                    <td className="money">{renderMoney(row, row.invoiceSum)}</td>
-                    <td className="money">{renderMoney(row, row.paymentSum)}</td>
-                    <td className="money">{renderMoney(row, row.reimbursableSum)}</td>
-                    <td className="money">{renderMoney(row, row.nonReimbursableSum)}</td>
+                    <td className="money">{renderMoney(row, 'invoiceSum')}</td>
+                    <td className="money">{renderMoney(row, 'paymentSum')}</td>
+                    <td className="money">{renderMoney(row, 'reimbursableSum')}</td>
+                    <td className="money">{renderMoney(row, 'nonReimbursableSum')}</td>
                     <td className="mono">{rowText(row, row.sfLabel)}</td>
-                    <td className={`delta ${row.showAmounts === false ? '' : deltaClass(row.delta)}`}>{renderMoney(row, row.delta)}</td>
+                    <td className={`delta ${row.showAmounts === false ? '' : deltaClass(row.delta)}`}>{renderMoney(row, 'delta')}</td>
                     <td className="matrix-status-cell">{renderBadges(row.badges)}</td>
                   </tr>
                   {row.kind === 'spec' && expanded.has(row.id) && (
