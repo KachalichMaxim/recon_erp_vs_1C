@@ -493,6 +493,97 @@ GROUP BY ahd.f_docid;
         "Если услуга подрядчика отражена в 1С как расходы компании на вкладке `Услуги` с субконто `Агентское вознаграждение / Услуги сторонних организаций`, договор клиента нельзя искусственно подтягивать в взаиморасчет. Такая строка подтверждает себестоимость, но не должна менять сальдо клиента.",
         fill=WARN_FILL,
     )
+    add_heading(doc, "5.5 Сквозной алгоритм для PHP-разработчика", 2)
+    add_body(
+        doc,
+        "Матрица должна строиться не из Excel и не из внешнего файла. Источник экрана и XLSX - один нормализованный массив блоков поставок. Ниже указано, какие данные собрать, что агрегировать и в какие колонки положить.",
+    )
+    add_table(
+        doc,
+        ["Шаг", "Данные / запрос", "Что сохранить в блоке поставки"],
+        [
+            (
+                "1. Контекст",
+                "`veda_contacts -> veda_clients -> veda_dogs -> veda_specs`; фильтры `contact_id`, `client_id`, `dog_id`, период или список `spec_id/f_num`.",
+                "`contact`, `legal`, `dog`, `spec`: id, название, ИНН, номер договора, код 1С, номер/дата поставки.",
+            ),
+            (
+                "2. Операции",
+                "`veda_spec_invoices` по `f_parenttype=2` и по `f_parenttype=4` через `veda_categs(f_ctgtype=24, f_objecttype=5)`.",
+                "`operations[]`: `oper_id`, тип операции, `f_isvozm`, НДС, `get_paidsum`, `get_realizsum`, `get_expensessum`, `get_profit`.",
+            ),
+            (
+                "3. Счета",
+                "Из `fetch_erp_docs(spec_id)` брать `doc_kind='schet'`, `type_name='Счет покупателю'`, `invoice_id=0`; при отдельном SQL - только `veda_schets.f_type=1` и основной счет.",
+                "`customer_invoices[]`: номер, дата, сумма, валюта, код 1С. Счета поставщиков не добавлять.",
+            ),
+            (
+                "4. Оплаты",
+                "`SUM(veda_acchist_docs.f_clssum)` по `f_doctype=3`, `f_docid IN operation_ids`, `JOIN veda_acchist ON f_acchistid`, `ah.f_type=0`; контроль с `get_paidsum(oper_id)`.",
+                "`paid_total_get_paidsum`, `paid_total_acchist_docs`; если различаются больше 0,01 - статус `PAYMENT_ROUTINE_VS_DOCS_MISMATCH`.",
+            ),
+            (
+                "5. Реализация",
+                "Для каждой операции взять `get_realizsum(oper_id)` и разделить по `veda_spec_invoices.f_isvozm`.",
+                "`reimbursable = SUM(get_realizsum WHERE f_isvozm=1)`, `non_reimbursable = SUM(get_realizsum WHERE f_isvozm=2)`.",
+            ),
+            (
+                "6. Закрывающие документы",
+                "Из `fetch_erp_docs(spec_id)` брать `doc_kind='act'`; дедупликация по `code1c/number/date/sum`.",
+                "`closing_docs[]`: каждый акт/УПД/СФ отдельной строкой; не сворачивать в `+N документов`.",
+            ),
+            (
+                "7. Дельта",
+                "`delta = SUM(get_paidsum) - SUM(get_realizsum)`.",
+                "`settlement_delta_paid_minus_realization`; ненулевое значение - статус `SETTLEMENT_BALANCE_NONZERO`, а не ошибка SQL.",
+            ),
+        ],
+        [700, 4380, 4280],
+        font_size=7.15,
+    )
+    add_code(
+        doc,
+        """
+// PHP-структура, которую должен отдавать backend экрана и XLSX
+foreach ($specs as $spec) {
+    $operations = fetch_operations($spec['spec_id']); // f_parenttype 2/4
+    $docs       = fetch_erp_docs($spec['spec_id']);   // счета + акты/УПД/СФ
+    $payments   = fetch_payments($spec['spec_id']);   // veda_acchist_docs.f_clssum
+
+    $customerInvoices = filter($docs, doc_kind='schet', type_name='Счет покупателю', invoice_id=0);
+    $closingDocs      = unique(filter($docs, doc_kind='act'), code1c, number, date, sum);
+
+    $paidByRoutine = SUM($operations.get_paidsum);
+    $paidByDocs    = SUM($payments WHERE direction='incoming'.classified_sum);
+    $reimb         = SUM($operations WHERE f_isvozm=1 . get_realizsum);
+    $nonReimb      = SUM($operations WHERE f_isvozm=2 . get_realizsum);
+    $realization   = $reimb + $nonReimb + SUM(unclassified get_realizsum);
+    $delta         = $paidByRoutine - $realization;
+}
+""",
+    )
+    add_table(
+        doc,
+        ["Колонка XLSX", "Заполнение", "Формат/объединение"],
+        [
+            ("A `№ спецификации`", "`Спецификация {spec_num}` из `veda_specs.f_num`.", "Объединить по числу строк счетов поставки."),
+            ("C `Счет`", "Каждый `customer_invoices[].number` отдельной строкой.", "Не объединять, строки идут вертикально."),
+            ("D `Сумма по счету`", "`customer_invoices[].sum + currency`.", "Не суммировать разные валюты без курса."),
+            ("E `Сумма оплаты`", "`paid_total_get_paidsum`.", "Объединить по поставке; контроль с `paid_total_acchist_docs`."),
+            ("G `Возмещаемые расходы`", "`reimbursable_realization_get_realizsum`.", "Объединить по поставке, деньги вправо."),
+            ("H `Невозмещаемые расходы`", "`non_reimbursable_realization_get_realizsum`.", "Объединить по поставке, деньги вправо."),
+            ("J `№ счф`", "`closing_docs` строками: `{code1c|number} от {date} ({sum})`.", "Объединить по поставке, перенос строки внутри ячейки."),
+            ("K `(+/-)`", "`settlement_delta_paid_minus_realization`.", "Объединить по поставке; красный фон/текст при ненуле."),
+            ("ИТОГО", "Суммы E/G/H/K по всем поставкам выборки.", "Подпись `ИТОГО`, без номеров строк внешних таблиц."),
+        ],
+        [1650, 5100, 2610],
+        font_size=7.25,
+    )
+    add_callout(
+        doc,
+        "Где смотреть рабочий пример",
+        "В репозитории рабочая реализация проверки находится в `tools/server_mariadb_reconciliation_report.py`. Она не является production PHP-кодом, но фиксирует SQL-связи, формулы, структуру JSON и правила XLSX, которые PHP-разработчик должен повторить в ERP.",
+    )
 
 
 def add_column_rules(doc):
