@@ -2508,6 +2508,164 @@ ORDER BY drive_path, drive_file_name;
     }
 
 
+def load_onec_postgres_aux_for_snapshot(snapshot: dict[str, object]) -> dict[str, object]:
+    account_movements: list[dict[str, object]] = []
+    document_lines: list[dict[str, object]] = []
+    with postgres_connect() as conn:
+        ensure_onec_pg_schema(conn)
+        with conn.cursor() as cur:
+            delivery = snapshot.get("delivery") if isinstance(snapshot.get("delivery"), dict) else {}
+            spec_number = normalize_text(delivery.get("spec_number"))
+            base_contract = normalize_text(delivery.get("main_dog_number"))
+            line_seen: set[tuple[str, str, int]] = set()
+
+            def append_document_line(raw_line: object) -> None:
+                if isinstance(raw_line, dict):
+                    line = dict(raw_line)
+                elif raw_line:
+                    line = json.loads(raw_line)
+                else:
+                    return
+                line_key = (
+                    normalize_text(line.get("source_file")),
+                    normalize_text(line.get("source_sheet")),
+                    pg_int_or_zero(line.get("source_row") or line.get("row_num")),
+                )
+                if line_key in line_seen:
+                    return
+                line_seen.add(line_key)
+                document_lines.append(line)
+
+            if spec_number and base_contract:
+                cur.execute(
+                    """
+SELECT movement_json
+FROM onec_account_movements
+WHERE (debit_spec_number = %s AND debit_base_contract = %s)
+   OR (credit_spec_number = %s AND credit_base_contract = %s)
+ORDER BY drive_file_name, source_sheet, source_row, id;
+""",
+                    (spec_number, base_contract, spec_number, base_contract),
+                )
+            elif spec_number:
+                cur.execute(
+                    """
+SELECT movement_json
+FROM onec_account_movements
+WHERE debit_spec_number = %s OR credit_spec_number = %s
+ORDER BY drive_file_name, source_sheet, source_row, id;
+""",
+                    (spec_number, spec_number),
+                )
+            else:
+                cur.execute("SELECT movement_json FROM onec_account_movements WHERE false;")
+            for (raw_movement,) in cur.fetchall():
+                if isinstance(raw_movement, dict):
+                    account_movements.append(dict(raw_movement))
+                elif raw_movement:
+                    account_movements.append(json.loads(raw_movement))
+
+            if spec_number and base_contract:
+                cur.execute(
+                    """
+SELECT line_json
+FROM onec_document_lines
+WHERE spec_number = %s AND base_contract = %s
+ORDER BY drive_file_name, source_sheet, source_row, id;
+""",
+                    (spec_number, base_contract),
+                )
+            elif spec_number:
+                cur.execute(
+                    """
+SELECT line_json
+FROM onec_document_lines
+WHERE spec_number = %s
+ORDER BY drive_file_name, source_sheet, source_row, id;
+""",
+                    (spec_number,),
+                )
+            else:
+                cur.execute("SELECT line_json FROM onec_document_lines WHERE false;")
+            for (raw_line,) in cur.fetchall():
+                append_document_line(raw_line)
+
+            act_line_pairs: list[tuple[str, str]] = []
+            act_snapshot_rows = snapshot.get("akts") if isinstance(snapshot.get("akts"), list) else []
+            for act_row in act_snapshot_rows:
+                if not isinstance(act_row, dict):
+                    continue
+                for code_name, date_name in [("code1c", "date_iso"), ("main_code1c", "main_date_iso")]:
+                    code = normalize_text(act_row.get(code_name))
+                    date_iso = parse_any_date_to_iso(act_row.get(date_name) or act_row.get("date"))
+                    if code and date_iso:
+                        pair = (code, date_iso)
+                        if pair not in act_line_pairs:
+                            act_line_pairs.append(pair)
+            if act_line_pairs:
+                clauses = []
+                params: list[object] = []
+                for code, date_iso in act_line_pairs:
+                    clauses.append("(document_code1c = %s AND document_date_iso = %s)")
+                    params.extend([code, date_iso])
+                cur.execute(
+                    f"""
+SELECT line_json
+FROM onec_document_lines
+WHERE {" OR ".join(clauses)}
+ORDER BY drive_file_name, source_sheet, source_row, id;
+""",
+                    params,
+                )
+                for (raw_line,) in cur.fetchall():
+                    append_document_line(raw_line)
+
+    account_movements = filter_onec_account_movements_for_snapshot(account_movements, snapshot)
+    document_lines = filter_onec_document_lines_for_snapshot(document_lines, snapshot)
+    return {"account_movements": account_movements, "document_lines": document_lines}
+
+
+def filter_onec_postgres_base_source_for_snapshot(base_source: dict[str, object], snapshot: dict[str, object]) -> dict[str, object]:
+    docs = base_source.get("docs") if isinstance(base_source.get("docs"), list) else []
+    filtered_docs, filter_summary = filter_onec_docs_for_snapshot(docs, snapshot)
+    aux = load_onec_postgres_aux_for_snapshot(snapshot)
+    account_movements = aux.get("account_movements") if isinstance(aux.get("account_movements"), list) else []
+    document_lines = aux.get("document_lines") if isinstance(aux.get("document_lines"), list) else []
+
+    by_kind: dict[str, int] = {}
+    for doc in filtered_docs:
+        kind = normalize_text(doc.get("kind")) or "unknown"
+        by_kind[kind] = by_kind.get(kind, 0) + 1
+
+    contract_pairs = sorted(
+        {
+            f"{doc.get('base_contract') or doc.get('contract_number')}/{doc.get('spec_number')}".strip("/")
+            for doc in filtered_docs
+            if doc.get("base_contract") or doc.get("contract_number") or doc.get("spec_number")
+        }
+    )
+
+    return {
+        "source_state": "postgresql",
+        "storage": "postgresql",
+        "files": base_source.get("files", []),
+        "warnings": base_source.get("warnings", []),
+        "all_docs_count": base_source.get("all_docs_count", len(docs)),
+        "docs_count": len(filtered_docs),
+        "all_account_movements_count": base_source.get("all_account_movements_count", 0),
+        "account_movements_count": len(account_movements),
+        "all_document_lines_count": base_source.get("all_document_lines_count", 0),
+        "document_lines_count": len(document_lines),
+        "cache_hit": True,
+        "by_kind": by_kind,
+        "contract_pairs": contract_pairs[:200],
+        "filter": filter_summary,
+        "docs": filtered_docs,
+        "account_movements": account_movements,
+        "document_lines": document_lines,
+    }
+
+
 def list_drive_children(service, folder_id: str, parent_path: str = "") -> list[dict[str, object]]:
     files: list[dict[str, object]] = []
     page_token = None
@@ -5331,6 +5489,110 @@ def build_spec_detail_docs(
     return details
 
 
+def build_spec_snapshot_from_parts(
+    spec_id: int,
+    operations: list[dict[str, object]],
+    erp_docs: list[dict[str, object]],
+    payments: list[dict[str, object]],
+) -> dict[str, object]:
+    delivery = fetch_delivery(spec_id)
+    contracts = fetch_contracts(spec_id, delivery)
+    settlements = build_settlements(operations, erp_docs, payments)
+    delivery_balance = build_delivery_balance(operations, erp_docs, payments, settlements)
+    return {
+        "ok": True,
+        "spec_id": spec_id,
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "delivery": delivery,
+        "contracts": contracts,
+        "client_tree": {},
+        "operations": operations,
+        "erp_docs": erp_docs,
+        "schets": [doc for doc in erp_docs if doc.get("doc_kind") == "schet"],
+        "akts": [doc for doc in erp_docs if doc.get("doc_kind") == "act"],
+        "payments": payments,
+        "settlements": settlements,
+        "delivery_balance": delivery_balance,
+        "xlsx_url": f"/api/reconciliation/erp-export.xlsx?spec_id={spec_id}",
+    }
+
+
+def compare_status_badge(row: dict[str, object]) -> dict[str, str]:
+    status = normalize_text(row.get("status"))
+    mismatch_fields = row.get("mismatch_fields") if isinstance(row.get("mismatch_fields"), list) else []
+    if status == STATUS_MATCH:
+        return {"key": "ok", "label": "ОК"}
+    if status == STATUS_NOT_FOUND_IN_1C:
+        return {"key": "no1c", "label": "Нет в 1С"}
+    if status == STATUS_NOT_FOUND_IN_ERP:
+        return {"key": "noerp", "label": "Нет в ERP"}
+    if status == STATUS_FIELDS_MISMATCH:
+        if "sum" in mismatch_fields or "amount" in mismatch_fields:
+            return {"key": "sum", "label": "Сумма расходится"}
+        if "vat" in mismatch_fields or "nds" in mismatch_fields or "vat_rate" in mismatch_fields:
+            return {"key": "nosf", "label": "Вопрос по НДС"}
+        return {"key": "fields", "label": "Реквизиты расходятся"}
+    if status == STATUS_NOT_COMPARABLE:
+        return {"key": "nokey", "label": "Нет ключа 1С"}
+    return {"key": "pending", "label": "Не сверено"}
+
+
+def compare_matrix_badges(report: dict[str, object] | None, delta: float, fallback_issues: list[str]) -> list[dict[str, str]]:
+    if not report:
+        return matrix_badges(fallback_issues, delta)
+    summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
+    badges: list[dict[str, str]] = []
+    not_found_1c = sql_int(summary.get(STATUS_NOT_FOUND_IN_1C))
+    not_found_erp = sql_int(summary.get(STATUS_NOT_FOUND_IN_ERP))
+    mismatch_sum = sql_int(summary.get("FIELDS_MISMATCH_SUM"))
+    mismatch_total = sql_int(summary.get(STATUS_FIELDS_MISMATCH))
+    not_comparable = sql_int(summary.get(STATUS_NOT_COMPARABLE))
+    total = sql_int(summary.get("total"))
+    if not_found_1c:
+        badges.append({"key": "no1c", "label": f"Нет в 1С {not_found_1c}"})
+    if not_found_erp:
+        badges.append({"key": "noerp", "label": f"Нет в ERP {not_found_erp}"})
+    if mismatch_sum:
+        badges.append({"key": "sum", "label": f"Сумма расходится {mismatch_sum}"})
+    other_mismatch = max(mismatch_total - mismatch_sum, 0)
+    if other_mismatch:
+        badges.append({"key": "fields", "label": f"Реквизиты {other_mismatch}"})
+    if not_comparable:
+        badges.append({"key": "nokey", "label": f"Нет ключа 1С {not_comparable}"})
+    if abs(delta) > 0.01:
+        badges.append({"key": "sum", "label": "Остаток"})
+    if not badges:
+        badges.append({"key": "ok", "label": "ОК" if total else "Нет строк сверки"})
+    return badges
+
+
+def build_compare_detail_docs(report: dict[str, object] | None, spec_id: int) -> list[dict[str, object]]:
+    if not report:
+        return []
+    rows = report.get("rows") if isinstance(report.get("rows"), list) else []
+    details: list[dict[str, object]] = []
+    for idx, row in enumerate(rows, start=1):
+        if not isinstance(row, dict):
+            continue
+        badge = compare_status_badge(row)
+        erp_num = one_line(row.get("erp_number")) or one_line(row.get("erp_code1c")) or (f"ERP-{sql_int(row.get('erp_doc_id'))}" if sql_int(row.get("erp_doc_id")) else "")
+        onec_num = one_line(row.get("onec_number")) or one_line(row.get("onec_code1c")) or one_line(row.get("onec_ref_id"))
+        doc_type = one_line(row.get("erp_type")) or one_line(row.get("onec_type")) or one_line(row.get("erp_doc_kind")) or one_line(row.get("onec_doc_kind")) or "Документ"
+        details.append(
+            detail_doc(
+                f"spec-{spec_id}-compare-{idx}",
+                f"Сверка 1С: {doc_type}",
+                erp_num,
+                onec_num,
+                one_line(row.get("erp_date_iso")) or one_line(row.get("onec_date_iso")),
+                live_money(row.get("erp_sum") if row.get("erp_sum") is not None else row.get("onec_sum")),
+                badge["key"],
+                badge["label"],
+            )
+        )
+    return details
+
+
 def build_client_specs_query(client_id: int, dog_id: int, limit: int, scope: str) -> str:
     scope = normalize_text(scope).lower()
     if scope == "contact":
@@ -5408,7 +5670,12 @@ def fetch_client_specs(client_id: int, dog_id: int, limit: int, scope: str) -> l
     return specs
 
 
-def build_client_spec_row(spec: dict[str, object], level: int) -> dict[str, object]:
+def build_client_spec_row(
+    spec: dict[str, object],
+    level: int,
+    onec_base_source: dict[str, object] | None = None,
+    compare_1c: bool = False,
+) -> dict[str, object]:
     spec_id = sql_int(spec.get("spec_id"))
     operations = fetch_operations(spec_id)
     erp_docs = fetch_erp_docs(spec_id)
@@ -5445,6 +5712,28 @@ def build_client_spec_row(spec: dict[str, object], level: int) -> dict[str, obje
         reimbursable=reimbursable,
         non_reimbursable=non_reimbursable,
     )
+    compare_report: dict[str, object] | None = None
+    compare_error = ""
+    if compare_1c and onec_base_source is not None:
+        try:
+            compare_snapshot = build_spec_snapshot_from_parts(spec_id, operations, erp_docs, payments)
+            onec_source = filter_onec_postgres_base_source_for_snapshot(onec_base_source, compare_snapshot)
+            compare_report = compare_onec_docs_with_erp_snapshot(spec_id, onec_source, compare_snapshot)
+            detail_docs.extend(build_compare_detail_docs(compare_report, spec_id))
+        except Exception as exc:
+            compare_error = str(exc)
+            detail_docs.append(
+                detail_doc(
+                    f"spec-{spec_id}-compare-error",
+                    "Сверка 1С",
+                    "ERP",
+                    "PostgreSQL 1С",
+                    "",
+                    0,
+                    "source-error",
+                    "Ошибка 1С",
+                )
+            )
 
     spec_type = one_line(spec.get("spec_type")) or "Поставка"
     spec_num = one_line(spec.get("spec_num")) or str(spec_id)
@@ -5470,7 +5759,7 @@ def build_client_spec_row(spec: dict[str, object], level: int) -> dict[str, obje
         "nonReimbursableSum": non_reimbursable,
         "sfLabel": joined_unique_lines([document_line(doc) for doc in acts]),
         "delta": delta,
-        "badges": matrix_badges(issues, delta),
+        "badges": [{"key": "source-error", "label": "Ошибка 1С"}] if compare_error else compare_matrix_badges(compare_report, delta, issues),
         "showAmounts": True,
         "meta": {
             "spec_id": spec_id,
@@ -5482,24 +5771,52 @@ def build_client_spec_row(spec: dict[str, object], level: int) -> dict[str, obje
             "closing_docs_count": len(acts),
             "payments_count": len(payments),
             "issues": issues,
+            "compare_1c": bool(compare_report),
+            "compare_1c_error": compare_error,
+        },
+        "reconciliation": {
+            "source_state": compare_report.get("source_state") if compare_report else ("error" if compare_error else "not_run"),
+            "summary": compare_report.get("summary") if compare_report else {},
+            "counts": compare_report.get("counts") if compare_report else {},
+            "error": compare_error,
         },
     }
 
 
-def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 25, scope: str = "auto") -> dict[str, object]:
+def build_client_matrix_snapshot(
+    client_id: int,
+    dog_id: int = 0,
+    limit: int = 25,
+    scope: str = "auto",
+    compare_1c: bool = True,
+    source_mode: str = "postgresql",
+) -> dict[str, object]:
     try:
         limit = int(limit)
     except Exception:
         limit = 25
     limit = min(max(limit, 1), 100)
     specs = fetch_client_specs(client_id, dog_id, limit, scope)
+    onec_base_source: dict[str, object] | None = None
+    onec_source_error = ""
+    source_mode = normalize_text(source_mode).lower() or "postgresql"
+    if compare_1c:
+        if source_mode in {"postgres", "postgresql", "pg", "auto"}:
+            try:
+                onec_base_source = load_onec_sources_from_postgres(snapshot=None)
+            except Exception as exc:
+                onec_source_error = str(exc)
+                if source_mode in {"postgres", "postgresql", "pg"}:
+                    onec_base_source = None
+        else:
+            onec_source_error = f"Unsupported client matrix 1C source mode: {source_mode}"
     if not specs:
         return {
             "ok": True,
             "source": "live_client_mariadb",
             "sourceState": "loaded",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "parameters": {"client_id": client_id, "dog_id": dog_id, "limit": limit, "scope": scope},
+            "parameters": {"client_id": client_id, "dog_id": dog_id, "limit": limit, "scope": scope, "compare_1c": compare_1c, "source_mode": source_mode},
             "delivery": {
                 "request_label": f"client_id {client_id}",
                 "client_name": f"client_id {client_id}",
@@ -5510,7 +5827,12 @@ def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 2
                 "clients": [],
                 "totals": {"invoiceSum": 0, "paymentSum": 0, "reimbursableSum": 0, "nonReimbursableSum": 0, "delta": 0},
                 "rowsCount": 0,
-                "sourceLabel": f"Live MariaDB ERP · client_id {client_id} · нет поставок",
+                "sourceLabel": f"Live MariaDB ERP{' + 1C Postgre' if onec_base_source else ''} · client_id {client_id} · нет поставок",
+            },
+            "onec_source": {
+                "enabled": compare_1c,
+                "state": onec_base_source.get("source_state") if onec_base_source else ("error" if onec_source_error else "not_run"),
+                "error": onec_source_error,
             },
         }
 
@@ -5562,7 +5884,12 @@ def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 2
             dogs = legal.get("dogs") if isinstance(legal.get("dogs"), dict) else {}
             for dog in dogs.values():
                 spec_rows = [
-                    build_client_spec_row(spec, 3)
+                    build_client_spec_row(
+                        spec,
+                        3,
+                        onec_base_source=onec_base_source,
+                        compare_1c=compare_1c and onec_base_source is not None,
+                    )
                     for spec in (dog.get("specs") if isinstance(dog.get("specs"), list) else [])
                 ]
                 all_spec_rows.extend(spec_rows)
@@ -5618,7 +5945,7 @@ def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 2
         "source": "live_client_mariadb",
         "sourceState": "loaded",
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "parameters": {"client_id": client_id, "dog_id": dog_id, "limit": limit, "scope": scope},
+        "parameters": {"client_id": client_id, "dog_id": dog_id, "limit": limit, "scope": scope, "compare_1c": compare_1c, "source_mode": source_mode},
         "delivery": {
             "request_label": f"Матрица client_id {client_id}",
             "spec_id": 0,
@@ -5633,7 +5960,15 @@ def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 2
             "clients": clients,
             "totals": matrix_totals,
             "rowsCount": len(all_spec_rows),
-            "sourceLabel": f"Live MariaDB ERP · client_id {client_id} · {len(all_spec_rows)} поставок · limit {limit}",
+            "sourceLabel": f"Live MariaDB ERP{' + 1C Postgre' if onec_base_source else ''} · client_id {client_id} · {len(all_spec_rows)} поставок · limit {limit}",
+        },
+        "onec_source": {
+            "enabled": compare_1c,
+            "state": onec_base_source.get("source_state") if onec_base_source else ("error" if onec_source_error else "not_run"),
+            "error": onec_source_error,
+            "docs_count": onec_base_source.get("all_docs_count", 0) if onec_base_source else 0,
+            "account_movements_count": onec_base_source.get("all_account_movements_count", 0) if onec_base_source else 0,
+            "document_lines_count": onec_base_source.get("all_document_lines_count", 0) if onec_base_source else 0,
         },
         "summary": {
             "specs": len(all_spec_rows),
@@ -6057,9 +6392,19 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
         scope = normalize_text((params.get("scope") or [params.get("client_scope", ["auto"])[0]])[0]).lower() or "auto"
         if scope not in {"auto", "legal", "contact"}:
             scope = "auto"
+        compare_raw = normalize_text((params.get("compare_1c") or params.get("compare1c") or params.get("with_1c") or ["1"])[0]).lower()
+        compare_1c = compare_raw not in {"0", "false", "no", "off"}
+        source_mode = normalize_text((params.get("source") or params.get("source_mode") or ["postgresql"])[0]).lower() or "postgresql"
 
         try:
-            snapshot = build_client_matrix_snapshot(client_id=client_id, dog_id=dog_id, limit=limit, scope=scope)
+            snapshot = build_client_matrix_snapshot(
+                client_id=client_id,
+                dog_id=dog_id,
+                limit=limit,
+                scope=scope,
+                compare_1c=compare_1c,
+                source_mode=source_mode,
+            )
         except Exception as exc:
             self.write_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
             return
