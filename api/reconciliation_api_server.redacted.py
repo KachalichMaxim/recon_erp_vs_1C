@@ -5598,6 +5598,192 @@ def build_compare_detail_docs(report: dict[str, object] | None, spec_id: int) ->
     return details
 
 
+def compare_status_user_label(row: dict[str, object]) -> tuple[str, str]:
+    badge = compare_status_badge(row)
+    return badge["key"], badge["label"]
+
+
+def compare_status_reason(row: dict[str, object]) -> str:
+    status = normalize_text(row.get("status"))
+    note = one_line(row.get("note"))
+    fields = row.get("mismatch_fields") if isinstance(row.get("mismatch_fields"), list) else []
+    evidence = row.get("match_evidence") if isinstance(row.get("match_evidence"), list) else []
+
+    if note:
+        return note
+    if status == STATUS_MATCH:
+        if evidence:
+            return "Найден документ 1С и совпали контролируемые поля: " + ", ".join(str(x) for x in evidence[:5])
+        return "Найден документ 1С и совпали контролируемые поля"
+    if status == STATUS_NOT_FOUND_IN_1C:
+        return "ERP-документ не найден в загруженной выгрузке 1С Postgre"
+    if status == STATUS_NOT_FOUND_IN_ERP:
+        return "Документ 1С не найден среди ERP-документов выбранной поставки"
+    if status == STATUS_NOT_COMPARABLE:
+        return "Недостаточно ключей для автоматической сверки: нужен kod1c и дата документа"
+    if status == STATUS_FIELDS_MISMATCH:
+        if "sum" in fields or "amount" in fields:
+            return "Документ найден, но сумма ERP и 1С отличается"
+        if "contract" in fields or "dog" in fields or "dog_code1c" in fields:
+            return "Документ найден, но договор/заявка в 1С не совпадает или не выгружен"
+        if "vat" in fields or "nds" in fields or "vat_rate" in fields:
+            return "Документ найден, но ставка НДС ERP и 1С отличается"
+        if "date" in fields:
+            return "Документ найден, но дата ERP и 1С отличается"
+        if "invoice_number" in fields or "number" in fields or "code1c" in fields:
+            return "Документ найден, но номер/код ERP и 1С отличается"
+        return "Документ найден, но есть расхождения контролируемых реквизитов"
+    return "Строка требует ручной проверки"
+
+
+def monitor_row_from_compare_row(spec: dict[str, object], row: dict[str, object], idx: int) -> dict[str, object]:
+    status_key, status_label = compare_status_user_label(row)
+    fields = row.get("mismatch_fields") if isinstance(row.get("mismatch_fields"), list) else []
+    evidence = row.get("match_evidence") if isinstance(row.get("match_evidence"), list) else []
+    erp_type = one_line(row.get("operation_title")) or one_line(row.get("erp_type")) or one_line(row.get("erp_doc_kind"))
+    onec_type = one_line(row.get("onec_type")) or one_line(row.get("onec_doc_kind"))
+    return {
+        "id": f"spec-{sql_int(spec.get('spec_id'))}-monitor-{idx}",
+        "spec_id": sql_int(spec.get("spec_id")),
+        "spec_num": one_line(spec.get("spec_num")),
+        "spec_num_short": one_line(spec.get("spec_num_short")),
+        "spec_type": one_line(spec.get("spec_type")) or "Поставка",
+        "spec_date": one_line(spec.get("spec_date")),
+        "spec_name": one_line(spec.get("spec_name")),
+        "dog_id": sql_int(spec.get("dog_id")),
+        "dog_number": one_line(spec.get("dog_number")),
+        "dog_code1c": one_line(spec.get("dog_code1c")),
+        "legal_id": sql_int(spec.get("legal_id")),
+        "legal_name": one_line(spec.get("legal_abbr")) or one_line(spec.get("legal_name")),
+        "legal_inn": one_line(spec.get("legal_inn")),
+        "contact_id": sql_int(spec.get("contact_id")),
+        "contact_name": one_line(spec.get("contact_name")),
+        "contact_inn": one_line(spec.get("contact_inn")),
+        "status": one_line(row.get("status")),
+        "status_key": status_key,
+        "status_label": status_label,
+        "reason": compare_status_reason(row),
+        "mismatch_fields": fields,
+        "match_evidence": evidence,
+        "erp_doc_kind": one_line(row.get("erp_doc_kind")),
+        "erp_type": erp_type,
+        "erp_number": one_line(row.get("erp_number")),
+        "erp_code1c": one_line(row.get("erp_code1c")),
+        "erp_date": one_line(row.get("erp_date_iso")),
+        "erp_sum": live_money(row.get("erp_sum")) if row.get("erp_sum") is not None else None,
+        "erp_currency": one_line(row.get("erp_currency")),
+        "erp_invoice_number": one_line(row.get("erp_invoice_number")),
+        "erp_dog_number": one_line(row.get("erp_dog_number")),
+        "erp_dog_code1c": one_line(row.get("erp_dog_code1c")),
+        "erp_export_state": one_line(row.get("erp_onec_export_state")),
+        "onec_doc_kind": one_line(row.get("onec_doc_kind")),
+        "onec_type": onec_type,
+        "onec_number": one_line(row.get("onec_number")),
+        "onec_code1c": one_line(row.get("onec_code1c")),
+        "onec_date": one_line(row.get("onec_date_iso")),
+        "onec_sum": live_money(row.get("onec_sum")) if row.get("onec_sum") is not None else None,
+        "onec_contract": one_line(row.get("onec_contract")),
+        "onec_base_contract": one_line(row.get("onec_base_contract")),
+        "onec_spec_number": one_line(row.get("onec_spec_number")),
+        "onec_invoice_number": one_line(row.get("onec_invoice_number")),
+        "onec_source_file": one_line(row.get("onec_source_file")),
+        "onec_source_row": sql_int(row.get("onec_source_row")),
+    }
+
+
+def build_monitor_rows_for_spec(
+    spec: dict[str, object],
+    report: dict[str, object] | None,
+    compare_error: str = "",
+) -> list[dict[str, object]]:
+    spec_id = sql_int(spec.get("spec_id"))
+    if compare_error:
+        return [{
+            "id": f"spec-{spec_id}-monitor-source-error",
+            "spec_id": spec_id,
+            "spec_num": one_line(spec.get("spec_num")),
+            "spec_num_short": one_line(spec.get("spec_num_short")),
+            "spec_type": one_line(spec.get("spec_type")) or "Поставка",
+            "spec_date": one_line(spec.get("spec_date")),
+            "spec_name": one_line(spec.get("spec_name")),
+            "dog_id": sql_int(spec.get("dog_id")),
+            "dog_number": one_line(spec.get("dog_number")),
+            "dog_code1c": one_line(spec.get("dog_code1c")),
+            "legal_id": sql_int(spec.get("legal_id")),
+            "legal_name": one_line(spec.get("legal_abbr")) or one_line(spec.get("legal_name")),
+            "legal_inn": one_line(spec.get("legal_inn")),
+            "contact_id": sql_int(spec.get("contact_id")),
+            "contact_name": one_line(spec.get("contact_name")),
+            "contact_inn": one_line(spec.get("contact_inn")),
+            "status": "SOURCE_ERROR_1C",
+            "status_key": "source-error",
+            "status_label": "Ошибка источника 1С",
+            "reason": compare_error,
+            "mismatch_fields": ["source"],
+            "match_evidence": [],
+            "erp_type": "",
+            "erp_number": "",
+            "erp_code1c": "",
+            "erp_date": "",
+            "erp_sum": None,
+            "onec_type": "PostgreSQL 1С",
+            "onec_number": "",
+            "onec_code1c": "",
+            "onec_date": "",
+            "onec_sum": None,
+            "onec_source_file": "",
+            "onec_source_row": 0,
+        }]
+    if not report:
+        return []
+    rows = report.get("rows") if isinstance(report.get("rows"), list) else []
+    return [monitor_row_from_compare_row(spec, row, idx) for idx, row in enumerate(rows, start=1) if isinstance(row, dict)]
+
+
+def summarize_reconciliation_monitor(rows: list[dict[str, object]], specs_total: int) -> dict[str, object]:
+    by_status: dict[str, int] = {}
+    by_label: dict[str, int] = {}
+    specs_checked = {sql_int(row.get("spec_id")) for row in rows if sql_int(row.get("spec_id"))}
+    specs_with_issues = {
+        sql_int(row.get("spec_id"))
+        for row in rows
+        if sql_int(row.get("spec_id")) and one_line(row.get("status")) != STATUS_MATCH
+    }
+    for row in rows:
+        status = one_line(row.get("status")) or "UNKNOWN"
+        label = one_line(row.get("status_label")) or status
+        by_status[status] = by_status.get(status, 0) + 1
+        by_label[label] = by_label.get(label, 0) + 1
+
+    limitations: list[str] = []
+    if by_status.get(STATUS_NOT_COMPARABLE):
+        limitations.append("Часть ERP-документов не имеет kod1c и/или даты, поэтому автоматическая сверка невозможна.")
+    if by_status.get(STATUS_NOT_FOUND_IN_1C):
+        limitations.append("Есть ERP-документы, которые не найдены в загруженной выгрузке 1С Postgre.")
+    if by_status.get(STATUS_NOT_FOUND_IN_ERP):
+        limitations.append("Есть документы 1С, которые не сопоставились с ERP-поставками текущей выборки.")
+    if any("contract" in (row.get("mismatch_fields") or []) for row in rows):
+        limitations.append("Для части строк 1С не хватает аналитики договора/заявки; такие строки подтверждают сумму, но не дают полного MATCH.")
+    if any("sum" in (row.get("mismatch_fields") or []) for row in rows):
+        limitations.append("Есть документы с расхождением суммы ERP и 1С.")
+
+    return {
+        "specs_total": specs_total,
+        "specs_checked": len(specs_checked),
+        "specs_with_issues": len(specs_with_issues),
+        "total_rows": len(rows),
+        "matched_rows": by_status.get(STATUS_MATCH, 0),
+        "issue_rows": len([row for row in rows if one_line(row.get("status")) != STATUS_MATCH]),
+        "not_found_in_1c": by_status.get(STATUS_NOT_FOUND_IN_1C, 0),
+        "not_found_in_erp": by_status.get(STATUS_NOT_FOUND_IN_ERP, 0),
+        "fields_mismatch": by_status.get(STATUS_FIELDS_MISMATCH, 0),
+        "not_comparable": by_status.get(STATUS_NOT_COMPARABLE, 0),
+        "by_status": by_status,
+        "by_label": by_label,
+        "limitations": limitations,
+    }
+
+
 def build_client_specs_query(client_id: int, dog_id: int, limit: int, scope: str) -> str:
     scope = normalize_text(scope).lower()
     if scope == "contact":
@@ -5790,6 +5976,7 @@ def build_client_spec_row(
             "counts": compare_report.get("counts") if compare_report else {},
             "error": compare_error,
         },
+        "reconciliation_monitor_rows": build_monitor_rows_for_spec(spec, compare_report, compare_error),
     }
 
 
@@ -5844,6 +6031,14 @@ def build_client_matrix_snapshot(
                 "state": onec_base_source.get("source_state") if onec_base_source else ("error" if onec_source_error else "not_run"),
                 "error": onec_source_error,
             },
+            "reconciliation_monitor": {
+                "enabled": compare_1c,
+                "source_state": onec_base_source.get("source_state") if onec_base_source else ("error" if onec_source_error else "not_run"),
+                "source_error": onec_source_error,
+                "rows": [],
+                "summary": summarize_reconciliation_monitor([], 0),
+                "mapping_version": "erp_1c_postgresql_v1",
+            },
         }
 
     contact_groups: dict[int, dict[str, object]] = {}
@@ -5886,6 +6081,7 @@ def build_client_matrix_snapshot(
 
     clients: list[dict[str, object]] = []
     all_spec_rows: list[dict[str, object]] = []
+    all_monitor_rows: list[dict[str, object]] = []
     for contact in contact_groups.values():
         legal_rows: list[dict[str, object]] = []
         legals = contact.get("legals") if isinstance(contact.get("legals"), dict) else {}
@@ -5893,15 +6089,18 @@ def build_client_matrix_snapshot(
             dog_rows: list[dict[str, object]] = []
             dogs = legal.get("dogs") if isinstance(legal.get("dogs"), dict) else {}
             for dog in dogs.values():
-                spec_rows = [
-                    build_client_spec_row(
+                spec_rows: list[dict[str, object]] = []
+                for spec in (dog.get("specs") if isinstance(dog.get("specs"), list) else []):
+                    spec_row = build_client_spec_row(
                         spec,
                         3,
                         onec_base_source=onec_base_source,
                         compare_1c=compare_1c and onec_base_source is not None,
                     )
-                    for spec in (dog.get("specs") if isinstance(dog.get("specs"), list) else [])
-                ]
+                    spec_rows.append(spec_row)
+                    monitor_rows = spec_row.get("reconciliation_monitor_rows")
+                    if isinstance(monitor_rows, list):
+                        all_monitor_rows.extend([row for row in monitor_rows if isinstance(row, dict)])
                 all_spec_rows.extend(spec_rows)
                 dog_totals = aggregate_matrix_rows(spec_rows)
                 dog_rows.append(
@@ -5979,6 +6178,14 @@ def build_client_matrix_snapshot(
             "docs_count": onec_base_source.get("all_docs_count", 0) if onec_base_source else 0,
             "account_movements_count": onec_base_source.get("all_account_movements_count", 0) if onec_base_source else 0,
             "document_lines_count": onec_base_source.get("all_document_lines_count", 0) if onec_base_source else 0,
+        },
+        "reconciliation_monitor": {
+            "enabled": compare_1c,
+            "source_state": onec_base_source.get("source_state") if onec_base_source else ("error" if onec_source_error else "not_run"),
+            "source_error": onec_source_error,
+            "rows": all_monitor_rows,
+            "summary": summarize_reconciliation_monitor(all_monitor_rows, len(all_spec_rows)),
+            "mapping_version": "erp_1c_postgresql_v1",
         },
         "summary": {
             "specs": len(all_spec_rows),

@@ -314,10 +314,40 @@
   .matrix-detail-grid > div:nth-last-child(-n+6) { border-bottom: none; }
   .matrix-detail-head { background: var(--bg-sunken); color: var(--muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.045em; }
   .matrix-empty { padding: 36px; text-align: center; color: var(--muted); font-size: 13px; }
+  .monitor-page { max-width: none; padding: 14px 16px 32px; }
+  .monitor-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; margin-bottom: 10px; }
+  .monitor-title { font-family: 'Inter Tight'; font-size: 20px; font-weight: 650; letter-spacing: 0; }
+  .monitor-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .monitor-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .monitor-controls { display: grid; grid-template-columns: minmax(260px, 360px) minmax(260px, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .monitor-kpis { display: grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .monitor-shell { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
+  .monitor-scroll { overflow: auto; max-height: calc(100vh - 265px); }
+  .monitor-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 11px; }
+  .monitor-table th { position: sticky; top: 0; z-index: 4; background: var(--bg-sunken); color: var(--ink-2); border-bottom: 1px solid var(--border); padding: 8px 7px; text-align: left; text-transform: uppercase; letter-spacing: 0.045em; line-height: 1.1; }
+  .monitor-table td { padding: 8px 7px; border-bottom: 1px solid var(--border); vertical-align: top; background: var(--surface); }
+  .monitor-table tr:hover td { background: var(--surface-2); }
+  .monitor-status { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 0; max-width: 100%; }
+  .monitor-status .matrix-badge {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.12;
+    padding: 3px 6px;
+    border-radius: 7px;
+  }
+  .monitor-doc { display: grid; gap: 3px; min-width: 0; }
+  .monitor-doc .doc-main { font-weight: 650; white-space: normal; overflow-wrap: anywhere; }
+  .monitor-doc .doc-meta { color: var(--muted); font-size: 10px; line-height: 1.25; overflow-wrap: anywhere; }
+  .monitor-reason { line-height: 1.3; }
+  .monitor-source { color: var(--muted); font-size: 10px; line-height: 1.3; overflow-wrap: anywhere; }
+  .monitor-empty { padding: 34px; text-align: center; color: var(--muted); font-size: 13px; }
   @media (max-width: 1180px) {
     .matrix-controls { grid-template-columns: 1fr; }
     .matrix-kpis { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
     .matrix-detail { margin-left: 0; }
+    .monitor-controls { grid-template-columns: 1fr; }
+    .monitor-kpis { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
   }
 
   /* ================= Progress (screen 2) ================= */
@@ -775,6 +805,13 @@ const getDogId = () => params.get('dog_id') || params.get('dogId') || '';
 const getMatrixLimit = () => params.get('limit') || '25';
 const getClientScope = () => params.get('scope') || params.get('client_scope') || 'auto';
 const getFixtureName = () => params.get('fixture') || params.get('reference') || '';
+const requestedViewName = () => (params.get('screen') || params.get('view') || window.location.hash.replace(/^#/, '') || '').toLowerCase();
+const isMonitorViewRequested = () => ['monitor', 'reconciliation', 'recon', 'compare'].includes(requestedViewName());
+const getCompareOneCFlag = () => {
+  const explicit = params.get('compare_1c') || params.get('compare1c') || params.get('with_1c');
+  if (explicit != null) return !['0', 'false', 'no', 'off'].includes(String(explicit).toLowerCase());
+  return isMonitorViewRequested();
+};
 const apiUrl = (path) => `${getApiBase()}${path}`;
 const getOneCTemplateUrl = () => apiUrl('/akt_sverki/templates/1c_reconciliation_upload_template.xlsx');
 window.RECONCILIATION_REPORT = null;
@@ -882,7 +919,8 @@ const applyErpSnapshot = (snapshot) => {
   if (docs.length > 0) window.DOCS = docs;
 };
 
-const loadErpSnapshot = async () => {
+const loadErpSnapshot = async (options = {}) => {
+  const compareOneC = options.compareOneC ?? getCompareOneCFlag();
   const fixture = getFixtureName();
   if (fixture) {
     const resp = await fetch(`./reference/${encodeURIComponent(fixture)}.json`);
@@ -894,9 +932,11 @@ const loadErpSnapshot = async () => {
 
   const clientId = getClientId();
   if (clientId) {
-    const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope() });
+    const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope(), compare_1c: compareOneC ? '1' : '0' });
     const dogId = getDogId();
     if (dogId) query.set('dog_id', dogId);
+    const sourceMode = params.get('source') || params.get('source_mode');
+    if (sourceMode) query.set('source', sourceMode);
     const resp = await fetch(apiUrl(`/api/reconciliation/client-matrix?${query.toString()}`));
     if (!resp.ok) {
       const text = await resp.text();
@@ -905,7 +945,7 @@ const loadErpSnapshot = async () => {
     const payload = await resp.json();
     if (!payload.ok) throw new Error(payload.error || 'ERP client matrix failed');
     applyErpSnapshot(payload);
-    return { state: 'loaded', message: `ERP-матрица загружена по client_id ${clientId}` };
+    return { state: 'loaded', message: `ERP-матрица загружена по client_id ${clientId}${compareOneC ? ' + 1С Postgre' : ''}` };
   }
 
   const specId = getSpecId();
@@ -1457,11 +1497,12 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
   }, [selectedClient, model.sourceLabel]);
 
   if (expectsUrlData && dataState?.state === 'loading') {
+    const withOneC = getCompareOneCFlag();
     const loadingTitle = getClientId()
       ? `Загружаем live-матрицу по client_id ${getClientId()}`
       : 'Загружаем данные матрицы';
     const loadingHint = getClientId()
-      ? `Выборка может занимать несколько минут: считаем до ${getMatrixLimit()} поставок через ERP-процедуры и сверяем с 1С Postgre.`
+      ? `Выборка может занимать несколько минут: считаем до ${getMatrixLimit()} поставок через ERP-процедуры${withOneC ? ' и сверяем с 1С Postgre' : ''}.`
       : 'Ждем ответ ERP API.';
     return (
       <div className="page matrix-page">
@@ -1613,7 +1654,7 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
   const handleExport = () => {
     const clientId = getClientId();
     if (clientId) {
-      const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope(), compare_1c: '1' });
+      const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope(), compare_1c: getCompareOneCFlag() ? '1' : '0' });
       const dogId = getDogId();
       if (dogId) query.set('dog_id', dogId);
       const currentParams = new URLSearchParams(window.location.search);
@@ -1646,7 +1687,7 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
           <div className="matrix-sub">{selected?.name || 'Клиент'} · {model.rowsCount} документальных строк</div>
         </div>
         <div className="matrix-actions">
-          <button className="btn sm" onClick={onOpenReport}><IconDoc size={13}/>{lastReport ? 'Отчет сверки' : 'Сверить с 1С'}</button>
+          <button className="btn sm" onClick={onOpenReport}><IconDoc size={13}/>Монитор ERP↔1С</button>
           <button className="btn sm" onClick={handleCopy}><IconCopy size={13}/>{copyState || 'Скопировать'}</button>
           <button className="btn brand" onClick={handleExport} title="Скачать бухгалтерскую форму .xlsx"><IconDownload size={14}/>Выгрузить XLSX</button>
         </div>
@@ -1772,6 +1813,329 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
 };
 
 window.ReconciliationMatrixPage = ReconciliationMatrixPage;
+
+
+/* ===== Reconciliation monitor page ===== */
+const ReconciliationMonitorPage = ({ onBack, onOpenMatrix, dataState }) => {
+  const expectsUrlData = Boolean(getClientId() || getSpecId() || getFixtureName());
+  const snapshot = window.ERP_SNAPSHOT || {};
+  const model = buildMatrixModel();
+  const monitor = snapshot.reconciliation_monitor || {};
+  const source = snapshot.onec_source || {};
+  const summary = monitor.summary || {};
+  const fallbackRowsFromMatrix = () => {
+    const result = [];
+    const statusCodeFromKey = (key) => {
+      if (key === 'ok') return 'MATCH';
+      if (key === 'no1c') return 'NOT_FOUND_IN_1C';
+      if (key === 'noerp') return 'NOT_FOUND_IN_ERP';
+      if (key === 'sum' || key === 'fields' || key === 'nosf' || key === 'no-sf') return 'FIELDS_MISMATCH';
+      if (key === 'nokey') return 'NOT_COMPARABLE';
+      if (key === 'source-error') return 'SOURCE_ERROR_1C';
+      return 'NOT_COMPARABLE';
+    };
+    const reasonFromStatus = (status, label = '') => {
+      const text = String(label || '').toLowerCase();
+      if (status === 'MATCH') return 'Найден документ 1С и совпали контролируемые поля';
+      if (status === 'NOT_FOUND_IN_1C') return 'ERP-документ не найден в загруженной выгрузке 1С Postgre';
+      if (status === 'NOT_FOUND_IN_ERP') return 'Документ 1С не найден среди ERP-документов текущей выборки';
+      if (status === 'FIELDS_MISMATCH') {
+        if (text.includes('договор')) return 'Документ найден по номеру/дате/сумме, но договор или заявка в 1С не совпадает с ERP';
+        if (text.includes('сумм')) return 'Документ найден, но сумма ERP и 1С отличается';
+        if (text.includes('ндс')) return 'Документ найден, но ставка НДС ERP и 1С отличается';
+        return 'Документ найден, но есть расхождения контролируемых полей';
+      }
+      if (status === 'SOURCE_ERROR_1C') return 'Ошибка чтения источника 1С';
+      return 'Недостаточно ключей для автоматической сверки';
+    };
+    const walk = (row, ctx = {}) => {
+      const next = { ...ctx };
+      if (row.kind === 'client') next.contact_name = row.name?.replace(/^Клиент:\s*/, '') || ctx.contact_name || '';
+      if (row.kind === 'legal') next.legal_name = row.name?.replace(/^ЮЛ:\s*/, '') || ctx.legal_name || '';
+      if (row.kind === 'contract') next.dog_number = row.name?.replace(/^Договор\s*:?\s*/, '') || ctx.dog_number || '';
+      if (row.kind === 'spec') {
+        const specId = row.meta?.spec_id || String(row.id || '').replace(/\D+/g, '') || 0;
+        (row.detailDocs || []).forEach((detail, idx) => {
+          const status = statusCodeFromKey(detail.status?.key);
+          result.push({
+            id: `${row.id || specId}-fallback-monitor-${idx}`,
+            spec_id: Number(specId) || 0,
+            spec_num: row.specNo || '',
+            spec_type: String(row.name || 'Поставка').replace(/\s*№.*$/, '') || 'Поставка',
+            spec_date: String(row.note || '').split(' · ')[0] || '',
+            spec_name: row.note || '',
+            dog_number: next.dog_number || '',
+            legal_name: next.legal_name || '',
+            contact_name: next.contact_name || '',
+            status,
+            status_key: detail.status?.key || 'pending',
+            status_label: detail.status?.label || status,
+            reason: reasonFromStatus(status, detail.status?.label),
+            mismatch_fields: [],
+            match_evidence: [],
+            erp_type: detail.type || '',
+            erp_number: detail.erp || '',
+            erp_code1c: detail.erp || '',
+            erp_date: detail.date || '',
+            erp_sum: detail.amount,
+            onec_type: detail.type || '',
+            onec_number: detail.onec || '',
+            onec_code1c: detail.onec || '',
+            onec_date: detail.date || '',
+            onec_sum: detail.amount,
+            onec_source_file: '',
+            onec_source_row: 0,
+          });
+        });
+      }
+      (row.children || []).forEach(child => walk(child, next));
+    };
+    (model.clients || []).forEach(client => client.root && walk(client.root, {}));
+    return result;
+  };
+  const rawMonitorRows = Array.isArray(monitor.rows) ? monitor.rows : [];
+  const rows = rawMonitorRows.length ? rawMonitorRows : fallbackRowsFromMatrix();
+  const effectiveSummary = rawMonitorRows.length ? summary : (() => {
+    const byStatus = rows.reduce((acc, row) => {
+      acc[row.status] = (acc[row.status] || 0) + 1;
+      return acc;
+    }, {});
+    const specs = new Set(rows.map(row => row.spec_id).filter(Boolean));
+    return {
+      specs_total: model.rowsCount || specs.size,
+      specs_checked: specs.size,
+      total_rows: rows.length,
+      matched_rows: byStatus.MATCH || 0,
+      issue_rows: rows.filter(row => row.status !== 'MATCH').length,
+      not_found_in_1c: byStatus.NOT_FOUND_IN_1C || 0,
+      not_found_in_erp: byStatus.NOT_FOUND_IN_ERP || 0,
+      fields_mismatch: byStatus.FIELDS_MISMATCH || 0,
+      not_comparable: byStatus.NOT_COMPARABLE || 0,
+      limitations: [],
+    };
+  })();
+  const [query, setQuery] = React.useState('');
+  const [filter, setFilter] = React.useState('all');
+
+  if (expectsUrlData && dataState?.state === 'loading') {
+    return (
+      <div className="page monitor-page">
+        <div className="monitor-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="monitor-title" style={{ marginTop: 12 }}>Загружаем монитор ERP ↔ 1С</div>
+            <div className="monitor-sub">Собираем ERP-поставки и сравниваем документы с выгрузкой 1С Postgre.</div>
+          </div>
+        </div>
+        <div className="monitor-shell" style={{ padding: 24 }}>
+          <div className="source-banner">
+            <IconSearch size={15}/>
+            <span>{dataState.message || 'Проверяем контекст ERP...'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (expectsUrlData && dataState?.state === 'error') {
+    return (
+      <div className="page monitor-page">
+        <div className="monitor-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="monitor-title" style={{ marginTop: 12 }}>Монитор не загрузился</div>
+            <div className="monitor-sub">Live API не вернул данные сверки. Попробуйте меньший limit или отключите сверку 1С для экрана сальдо.</div>
+          </div>
+        </div>
+        <div className="monitor-shell" style={{ padding: 24 }}>
+          <div className="source-banner warn">
+            <IconAlert size={15}/>
+            <span>{dataState.message || 'Ошибка загрузки ERP API'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const statusFilters = [
+    ['all', 'Все'],
+    ['issues', 'Отклонения'],
+    ['NOT_FOUND_IN_1C', 'Нет в 1С'],
+    ['NOT_FOUND_IN_ERP', 'Нет в ERP'],
+    ['FIELDS_MISMATCH', 'Поля/суммы'],
+    ['NOT_COMPARABLE', 'Нет ключа'],
+  ];
+  const statusKey = (row) => row.status_key || (row.status === 'MATCH' ? 'ok' : 'fields');
+  const statusLabel = (row) => row.status_label || row.status || 'Статус';
+  const statusMatches = (row) => {
+    if (filter === 'all') return true;
+    if (filter === 'issues') return row.status !== 'MATCH';
+    return row.status === filter;
+  };
+  const rowSearchBlob = (row) => [
+    row.contact_name, row.contact_inn, row.legal_name, row.legal_inn,
+    row.dog_number, row.dog_code1c, row.spec_type, row.spec_num, row.spec_name,
+    row.erp_type, row.erp_number, row.erp_code1c, row.erp_invoice_number,
+    row.onec_type, row.onec_number, row.onec_code1c, row.onec_source_file,
+    row.reason,
+  ].join(' ').toLowerCase();
+  const filteredRows = rows.filter((row) => {
+    if (!statusMatches(row)) return false;
+    return !query || rowSearchBlob(row).includes(query.toLowerCase());
+  });
+  const fmtDoc = (system, row) => {
+    const prefix = system === 'erp' ? 'erp' : 'onec';
+    const type = row[`${prefix}_type`] || row[`${prefix}_doc_kind`] || 'Документ';
+    const number = row[`${prefix}_number`] || row[`${prefix}_code1c`] || '—';
+    const code = row[`${prefix}_code1c`] && row[`${prefix}_code1c`] !== number ? `код ${row[`${prefix}_code1c`]}` : '';
+    const date = row[`${prefix}_date`] || '—';
+    const amount = row[`${prefix}_sum`] == null ? '—' : fmtMoney(row[`${prefix}_sum`]);
+    const extra = system === 'erp'
+      ? [row.erp_dog_number ? `договор ${row.erp_dog_number}` : '', row.erp_export_state ? `ERP экспорт: ${row.erp_export_state}` : ''].filter(Boolean).join(' · ')
+      : [row.onec_base_contract ? `базовый ${row.onec_base_contract}` : '', row.onec_spec_number ? `заявка ${row.onec_spec_number}` : ''].filter(Boolean).join(' · ');
+    return { type, number, code, date, amount, extra };
+  };
+  const sourceState = monitor.source_state || source.state || '';
+  const sourceLabel = sourceState === 'postgresql' ? '1С PostgreSQL' : sourceState || '1С источник';
+  const docsCount = Number(source.docs_count || 0);
+  const movementsCount = Number(source.account_movements_count || 0);
+  const linesCount = Number(source.document_lines_count || 0);
+  const issueRows = Number(effectiveSummary.issue_rows || 0);
+  const matchedRows = Number(effectiveSummary.matched_rows || 0);
+
+  return (
+    <div className="page monitor-page">
+      <div className="monitor-head">
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <span className="pill-sm">Монитор ERP ↔ 1С</span>
+            <span className="mono muted" style={{ fontSize: 11.5 }}>{sourceLabel}</span>
+          </div>
+          <div className="monitor-title">Сверка документов ERP и 1С</div>
+          <div className="monitor-sub">
+            Проверено поставок: {effectiveSummary.specs_checked || 0} из {effectiveSummary.specs_total || model.rowsCount || 0} · строк сверки: {effectiveSummary.total_rows || 0}
+          </div>
+        </div>
+        <div className="monitor-actions">
+          <button className="btn sm" onClick={onOpenMatrix}><IconList size={13}/>Сальдо по поставкам</button>
+          <button className="btn sm" onClick={() => window.location.reload()}><IconRefresh size={13}/>Пересчитать</button>
+        </div>
+      </div>
+
+      <div className={`source-banner ${monitor.source_error ? 'warn' : 'ok'}`}>
+        <IconInfo size={14}/>
+        <span>
+          Источник 1С: {sourceLabel}; документы {docsCount}, движения счетов {movementsCount}, строки документов {linesCount}.
+          {monitor.source_error ? ` Ошибка: ${monitor.source_error}` : ''}
+        </span>
+      </div>
+
+      <div className="monitor-controls">
+        <select className="matrix-select" value={model.clients[0]?.id || ''} onChange={() => {}}>
+          {(model.clients || []).map(c => <option key={c.id} value={c.id}>{c.name}{c.inn ? ` · ИНН ${c.inn}` : ''}</option>)}
+        </select>
+        <div className="matrix-search">
+          <IconSearch size={14}/>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск по клиенту, ЮЛ, договору, поставке, ERP/1С номеру..." />
+        </div>
+        <div className="seg">
+          {statusFilters.map(([key, label]) => <button key={key} className={filter === key ? 'on' : ''} onClick={() => setFilter(key)}>{label}</button>)}
+        </div>
+      </div>
+
+      <div className="monitor-kpis">
+        <div className="matrix-kpi"><div className="v mono">{effectiveSummary.specs_checked || 0}</div><div className="l">Поставок проверено</div></div>
+        <div className="matrix-kpi"><div className="v mono">{effectiveSummary.total_rows || 0}</div><div className="l">Строк сверки</div></div>
+        <div className="matrix-kpi"><div className="v mono">{matchedRows}</div><div className="l">Совпало</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${issueRows ? 'neg' : ''}`}>{issueRows}</div><div className="l">Отклонений</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${effectiveSummary.not_found_in_1c ? 'neg' : ''}`}>{effectiveSummary.not_found_in_1c || 0}</div><div className="l">Нет в 1С</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${effectiveSummary.not_found_in_erp ? 'neg' : ''}`}>{effectiveSummary.not_found_in_erp || 0}</div><div className="l">Нет в ERP</div></div>
+      </div>
+
+      {Array.isArray(effectiveSummary.limitations) && effectiveSummary.limitations.length > 0 && (
+        <div className="source-banner warn">
+          <IconAlert size={14}/>
+          <span>{effectiveSummary.limitations.join(' ')}</span>
+        </div>
+      )}
+
+      <div className="monitor-shell">
+        <div className="monitor-scroll">
+          <table className="monitor-table">
+            <colgroup>
+              <col style={{ width: '13%' }}/>
+              <col style={{ width: '21%' }}/>
+              <col style={{ width: '19%' }}/>
+              <col style={{ width: '19%' }}/>
+              <col style={{ width: '20%' }}/>
+              <col style={{ width: '8%' }}/>
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Статус</th>
+                <th>Поставка</th>
+                <th>ERP</th>
+                <th>1С</th>
+                <th>Причина</th>
+                <th>Источник</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map(row => {
+                const erp = fmtDoc('erp', row);
+                const onec = fmtDoc('onec', row);
+                return (
+                  <tr key={row.id}>
+                    <td>
+                      <div className="monitor-status">
+                        <span className={`matrix-badge ${statusKey(row)}`}>{statusLabel(row)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="monitor-doc">
+                        <div className="doc-main">{row.spec_type} №{row.spec_num || row.spec_id}</div>
+                        <div className="doc-meta">{row.spec_date || '—'} · spec_id {row.spec_id}</div>
+                        <div className="doc-meta">Договор {row.dog_number || '—'}{row.dog_code1c ? ` · код 1С ${row.dog_code1c}` : ''}</div>
+                        <div className="doc-meta">{row.legal_name || row.contact_name || '—'}{row.legal_inn ? ` · ИНН ${row.legal_inn}` : ''}</div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="monitor-doc">
+                        <div className="doc-main">{erp.type}</div>
+                        <div className="doc-meta mono">{erp.number}{erp.code ? ` · ${erp.code}` : ''}</div>
+                        <div className="doc-meta mono">{erp.date} · {erp.amount}</div>
+                        {erp.extra && <div className="doc-meta">{erp.extra}</div>}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="monitor-doc">
+                        <div className="doc-main">{onec.type}</div>
+                        <div className="doc-meta mono">{onec.number}{onec.code ? ` · ${onec.code}` : ''}</div>
+                        <div className="doc-meta mono">{onec.date} · {onec.amount}</div>
+                        {onec.extra && <div className="doc-meta">{onec.extra}</div>}
+                      </div>
+                    </td>
+                    <td><div className="monitor-reason">{row.reason || '—'}</div></td>
+                    <td>
+                      <div className="monitor-source">
+                        {row.onec_source_file || '—'}
+                        {row.onec_source_row ? <><br/>строка {row.onec_source_row}</> : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredRows.length === 0 && <div className="monitor-empty">Нет строк сверки по выбранному фильтру</div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+window.ReconciliationMonitorPage = ReconciliationMonitorPage;
 
 
 /* ===== src/DeliveryCard.jsx ===== */
@@ -2887,7 +3251,8 @@ const SCREEN_KEY = 'akt_sverki_screen_v1';
 const screenFromLocation = () => {
   const params = new URLSearchParams(window.location.search);
   const requested = (params.get('screen') || params.get('view') || window.location.hash.replace(/^#/, '') || '').toLowerCase();
-  if (['delivery', 'matrix'].includes(requested)) return requested;
+  if (['delivery', 'matrix', 'monitor'].includes(requested)) return requested;
+  if (['reconciliation', 'recon', 'compare'].includes(requested)) return 'monitor';
   if (params.has('spec_id') || params.has('specId') || params.has('client_id') || params.has('clientId') || params.has('legal_id') || params.has('contact_id') || params.has('fixture') || params.has('reference')) return 'matrix';
   return '';
 };
@@ -2924,7 +3289,8 @@ const App = () => {
 
   React.useEffect(() => {
     let alive = true;
-    loadErpSnapshot()
+    setDataState({ state: 'loading', message: screen === 'monitor' ? 'Загружаем ERP + 1С Postgre...' : 'Проверяем контекст ERP...' });
+    loadErpSnapshot({ compareOneC: screen === 'monitor' || getCompareOneCFlag() })
       .then((state) => { if (alive) setDataState(state); })
       .catch((err) => {
         if (!alive) return;
@@ -2933,7 +3299,7 @@ const App = () => {
         setDataState({ state: 'error', message: 'ERP API недоступен: не удалось получить данные по URL-параметрам. Показан локальный пример.' });
       });
     return () => { alive = false; };
-  }, []);
+  }, [screen]);
 
   // Apply tweaks to body
   React.useEffect(() => {
@@ -3009,14 +3375,16 @@ const App = () => {
     }
   };
 
-  const activeNav = screen === 'delivery' ? 'delivery' : screen === 'matrix' ? 'matrix' : screen === 'progress' || screen === 'report' ? 'recon' : 'other';
+  const activeNav = screen === 'delivery' ? 'delivery' : screen === 'matrix' ? 'matrix' : screen === 'monitor' || screen === 'progress' || screen === 'report' ? 'recon' : 'other';
   const currentCrumb = screen === 'progress'
     ? 'Сверка с 1С (в процессе)'
     : screen === 'report'
       ? 'Отчёт сверки'
-      : screen === 'matrix'
-        ? 'Матрица взаиморасчетов'
-        : '';
+      : screen === 'monitor'
+        ? 'Монитор ERP ↔ 1С'
+        : screen === 'matrix'
+          ? 'Сальдо по поставкам'
+          : '';
 
   return (
     <>
@@ -3034,11 +3402,11 @@ const App = () => {
             <div className={`nav-item ${activeNav === 'delivery' ? 'active' : ''}`} onClick={() => setScreen('delivery')}>
               <IconBox size={14}/>Поставки<span className="count">12</span>
             </div>
-            <div className={`nav-item ${activeNav === 'recon' ? 'active' : ''}`} onClick={() => lastReport ? setScreen('report') : setScreen('delivery')}>
-              <IconRefresh size={14}/>Сверки<span className="count">84</span>
+            <div className={`nav-item ${activeNav === 'recon' ? 'active' : ''}`} onClick={() => setScreen('monitor')}>
+              <IconRefresh size={14}/>Сверка ERP↔1С<span className="count">84</span>
             </div>
             <div className={`nav-item ${activeNav === 'matrix' ? 'active' : ''}`} onClick={() => setScreen('matrix')}>
-              <IconList size={14}/>Матрица<span className="count">1</span>
+              <IconList size={14}/>Сальдо<span className="count">1</span>
             </div>
             <div className="nav-item"><IconChart size={14}/>Аналитика</div>
             <div className="nav-item"><IconDoc size={14}/>Документы</div>
@@ -3100,9 +3468,16 @@ const App = () => {
           {screen === 'matrix' && (
             <ReconciliationMatrixPage
               onBack={() => setScreen('delivery')}
-              onOpenReport={() => lastReport ? setScreen('report') : runFolderCompare()}
+              onOpenReport={() => setScreen('monitor')}
               lastReport={lastReport}
               compareState={compareState}
+              dataState={dataState}
+            />
+          )}
+          {screen === 'monitor' && (
+            <ReconciliationMonitorPage
+              onBack={() => setScreen('delivery')}
+              onOpenMatrix={() => setScreen('matrix')}
               dataState={dataState}
             />
           )}
