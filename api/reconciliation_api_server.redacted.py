@@ -5211,6 +5211,126 @@ def document_line(doc: dict[str, object]) -> str:
     return number
 
 
+def detail_doc(
+    doc_id: str,
+    doc_type: str,
+    erp: str,
+    onec: str,
+    date: str,
+    amount: float,
+    status_key: str = "pending",
+    status_label: str = "ERP",
+) -> dict[str, object]:
+    return {
+        "id": doc_id,
+        "type": doc_type,
+        "erp": erp or "—",
+        "onec": onec or "—",
+        "date": date or "—",
+        "amount": live_money(amount),
+        "status": {"key": status_key, "label": status_label},
+    }
+
+
+def compact_unique(values: list[str], empty: str = "—") -> str:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        text = one_line(value)
+        if text and text not in seen:
+            seen.add(text)
+            result.append(text)
+    return ", ".join(result) if result else empty
+
+
+def build_spec_detail_docs(
+    spec_id: int,
+    operations: list[dict[str, object]],
+    invoices: list[dict[str, object]],
+    acts: list[dict[str, object]],
+    payments: list[dict[str, object]],
+    reimbursable: float,
+    non_reimbursable: float,
+) -> list[dict[str, object]]:
+    details: list[dict[str, object]] = []
+    reimb_ops = [op for op in operations if operation_bucket(op) == "reimbursable"]
+    non_reimb_ops = [op for op in operations if operation_bucket(op) == "non_reimbursable"]
+
+    if reimb_ops:
+        details.append(
+            detail_doc(
+                f"spec-{spec_id}-reimb",
+                "Возмещаемые расходы",
+                f"операции {compact_unique([str(op.get('oper_num')) for op in reimb_ops])}",
+                "get_realizsum",
+                "",
+                reimbursable,
+                "ok",
+                "ERP",
+            )
+        )
+    if non_reimb_ops:
+        details.append(
+            detail_doc(
+                f"spec-{spec_id}-non-reimb",
+                "Невозмещаемые расходы",
+                f"операции {compact_unique([str(op.get('oper_num')) for op in non_reimb_ops])}",
+                "get_realizsum",
+                "",
+                non_reimbursable,
+                "ok",
+                "ERP",
+            )
+        )
+
+    for doc in invoices:
+        details.append(
+            detail_doc(
+                f"spec-{spec_id}-invoice-{sql_int(doc.get('erp_doc_id'))}",
+                "Счет на оплату",
+                one_line(doc.get("number")) or one_line(doc.get("code1c")),
+                one_line(doc.get("code1c")),
+                one_line(doc.get("date")),
+                live_money(doc.get("sum")),
+                "pending",
+                "ERP",
+            )
+        )
+
+    for payment in payments:
+        if payment.get("direction") != "incoming":
+            continue
+        payment_id = sql_int(payment.get("payment_id"))
+        details.append(
+            detail_doc(
+                f"spec-{spec_id}-payment-{payment_id}-{sql_int(payment.get('oper_id'))}",
+                "Оплата покупателя",
+                one_line(payment.get("pp_number")) or f"ПП {payment_id}",
+                one_line(payment.get("code1c")),
+                one_line(payment.get("payment_date")),
+                live_money(payment.get("classified_sum") or payment.get("payment_sum")),
+                "pending",
+                "ERP",
+            )
+        )
+
+    for doc in acts:
+        details.append(
+            detail_doc(
+                f"spec-{spec_id}-act-{sql_int(doc.get('erp_doc_id'))}",
+                one_line(doc.get("type_name")) or "Закрывающий документ",
+                one_line(doc.get("number")) or one_line(doc.get("code1c")),
+                one_line(doc.get("code1c")),
+                one_line(doc.get("date")),
+                live_money(doc.get("sum")),
+                "pending",
+                "ERP",
+            )
+        )
+
+    return details
+
+
 def build_client_specs_query(client_id: int, dog_id: int, limit: int, scope: str) -> str:
     scope = normalize_text(scope).lower()
     if scope == "contact":
@@ -5316,6 +5436,15 @@ def build_client_spec_row(spec: dict[str, object], level: int) -> dict[str, obje
         issues.append("SETTLEMENT_BALANCE_NONZERO")
     if abs(unclassified) > 0.01:
         issues.append("UNCLASSIFIED_REALIZATION")
+    detail_docs = build_spec_detail_docs(
+        spec_id=spec_id,
+        operations=operations,
+        invoices=invoices,
+        acts=acts,
+        payments=payments,
+        reimbursable=reimbursable,
+        non_reimbursable=non_reimbursable,
+    )
 
     spec_type = one_line(spec.get("spec_type")) or "Поставка"
     spec_num = one_line(spec.get("spec_num")) or str(spec_id)
@@ -5333,6 +5462,7 @@ def build_client_spec_row(spec: dict[str, object], level: int) -> dict[str, obje
         "isParent": False,
         "defaultExpanded": False,
         "children": [],
+        "detailDocs": detail_docs,
         "invoiceLabel": joined_unique_lines([one_line(doc.get("number")) or one_line(doc.get("code1c")) for doc in invoices]),
         "invoiceSum": invoice_total,
         "paymentSum": paid_by_routine,

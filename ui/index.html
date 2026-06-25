@@ -1431,6 +1431,30 @@ const buildMatrixModel = () => {
 /* ===== Matrix page ===== */
 const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareState, dataState }) => {
   const expectsUrlData = Boolean(getClientId() || getSpecId() || getFixtureName());
+  const model = buildMatrixModel();
+  const [selectedClient, setSelectedClient] = React.useState(() => model.clients[0]?.id || '');
+  const [query, setQuery] = React.useState('');
+  const [onlyIssues, setOnlyIssues] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(() => new Set(['client-', 'org-', 'contract-', 'delivery-']));
+  const [copyState, setCopyState] = React.useState('');
+  const clients = model.clients;
+  const selected = clients.find(c => c.id === selectedClient) || clients[0];
+
+  React.useEffect(() => {
+    if (selected && selected.id !== selectedClient) setSelectedClient(selected.id);
+  }, [selected?.id]);
+
+  React.useEffect(() => {
+    if (!selected?.root) return;
+    const defaults = new Set();
+    const walk = (row) => {
+      if (row.isParent && row.defaultExpanded) defaults.add(row.id);
+      (row.children || []).forEach(walk);
+    };
+    walk(selected.root);
+    setExpanded(defaults);
+  }, [selectedClient, model.sourceLabel]);
+
   if (expectsUrlData && dataState?.state === 'loading') {
     const loadingTitle = getClientId()
       ? `Загружаем live-матрицу по client_id ${getClientId()}`
@@ -1475,29 +1499,6 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
       </div>
     );
   }
-  const model = buildMatrixModel();
-  const [selectedClient, setSelectedClient] = React.useState(() => model.clients[0]?.id || '');
-  const [query, setQuery] = React.useState('');
-  const [onlyIssues, setOnlyIssues] = React.useState(false);
-  const [expanded, setExpanded] = React.useState(() => new Set(['client-', 'org-', 'contract-', 'delivery-']));
-  const [copyState, setCopyState] = React.useState('');
-  const clients = model.clients;
-  const selected = clients.find(c => c.id === selectedClient) || clients[0];
-
-  React.useEffect(() => {
-    if (selected && selected.id !== selectedClient) setSelectedClient(selected.id);
-  }, [selected?.id]);
-
-  React.useEffect(() => {
-    if (!selected?.root) return;
-    const defaults = new Set();
-    const walk = (row) => {
-      if (row.isParent && row.defaultExpanded) defaults.add(row.id);
-      (row.children || []).forEach(walk);
-    };
-    walk(selected.root);
-    setExpanded(defaults);
-  }, [selectedClient, model.sourceLabel]);
 
   const toggle = (id) => {
     setExpanded(prev => {
