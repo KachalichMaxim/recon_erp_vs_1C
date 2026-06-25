@@ -1429,7 +1429,52 @@ const buildMatrixModel = () => {
 };
 
 /* ===== Matrix page ===== */
-const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareState }) => {
+const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareState, dataState }) => {
+  const expectsUrlData = Boolean(getClientId() || getSpecId() || getFixtureName());
+  if (expectsUrlData && dataState?.state === 'loading') {
+    const loadingTitle = getClientId()
+      ? `Загружаем live-матрицу по client_id ${getClientId()}`
+      : 'Загружаем данные матрицы';
+    const loadingHint = getClientId()
+      ? `Выборка может занимать до минуты: считаем до ${getMatrixLimit()} поставок через ERP-процедуры.`
+      : 'Ждем ответ ERP API.';
+    return (
+      <div className="page matrix-page">
+        <div className="matrix-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="matrix-title" style={{ marginTop: 12 }}>{loadingTitle}</div>
+            <div className="matrix-sub">{loadingHint}</div>
+          </div>
+        </div>
+        <div className="matrix-shell" style={{ padding: 24 }}>
+          <div className="source-banner">
+            <IconSearch size={15}/>
+            <span>{dataState.message || 'Проверяем контекст ERP...'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (expectsUrlData && dataState?.state === 'error') {
+    return (
+      <div className="page matrix-page">
+        <div className="matrix-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="matrix-title" style={{ marginTop: 12 }}>Матрица не загрузилась</div>
+            <div className="matrix-sub">Live API не вернул данные. Для тяжелых договоров попробуйте меньший `limit`.</div>
+          </div>
+        </div>
+        <div className="matrix-shell" style={{ padding: 24 }}>
+          <div className="source-banner warn">
+            <IconAlert size={15}/>
+            <span>{dataState.message || 'Ошибка загрузки ERP API'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const model = buildMatrixModel();
   const [selectedClient, setSelectedClient] = React.useState(() => model.clients[0]?.id || '');
   const [query, setQuery] = React.useState('');
@@ -3016,6 +3061,7 @@ const App = () => {
               onOpenReport={() => lastReport ? setScreen('report') : runFolderCompare()}
               lastReport={lastReport}
               compareState={compareState}
+              dataState={dataState}
             />
           )}
           {screen === 'report' && (
