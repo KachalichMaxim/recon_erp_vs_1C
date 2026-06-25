@@ -5411,35 +5411,6 @@ def build_spec_detail_docs(
     non_reimbursable: float,
 ) -> list[dict[str, object]]:
     details: list[dict[str, object]] = []
-    reimb_ops = [op for op in operations if operation_bucket(op) == "reimbursable"]
-    non_reimb_ops = [op for op in operations if operation_bucket(op) == "non_reimbursable"]
-
-    if reimb_ops:
-        details.append(
-            detail_doc(
-                f"spec-{spec_id}-reimb",
-                "Возмещаемые расходы",
-                f"операции {compact_unique([str(op.get('oper_num')) for op in reimb_ops])}",
-                "get_realizsum",
-                "",
-                reimbursable,
-                "ok",
-                "ERP",
-            )
-        )
-    if non_reimb_ops:
-        details.append(
-            detail_doc(
-                f"spec-{spec_id}-non-reimb",
-                "Невозмещаемые расходы",
-                f"операции {compact_unique([str(op.get('oper_num')) for op in non_reimb_ops])}",
-                "get_realizsum",
-                "",
-                non_reimbursable,
-                "ok",
-                "ERP",
-            )
-        )
 
     for doc in invoices:
         details.append(
@@ -5451,7 +5422,7 @@ def build_spec_detail_docs(
                 one_line(doc.get("date")),
                 live_money(doc.get("sum")),
                 "pending",
-                "ERP",
+                "ERP-данные",
             )
         )
 
@@ -5468,7 +5439,7 @@ def build_spec_detail_docs(
                 one_line(payment.get("payment_date")),
                 live_money(payment.get("classified_sum") or payment.get("payment_sum")),
                 "pending",
-                "ERP",
+                "ERP-данные",
             )
         )
 
@@ -5482,11 +5453,40 @@ def build_spec_detail_docs(
                 one_line(doc.get("date")),
                 live_money(doc.get("sum")),
                 "pending",
-                "ERP",
+                "ERP-данные",
             )
         )
 
     return details
+
+
+def build_spec_calculation_rows(
+    operations: list[dict[str, object]],
+    reimbursable: float,
+    non_reimbursable: float,
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    reimb_ops = [op for op in operations if operation_bucket(op) == "reimbursable"]
+    non_reimb_ops = [op for op in operations if operation_bucket(op) == "non_reimbursable"]
+    if reimb_ops:
+        rows.append(
+            {
+                "type": "Возмещаемые расходы",
+                "method": "get_realizsum",
+                "source": f"операции {compact_unique([str(op.get('oper_num')) for op in reimb_ops])}",
+                "amount": live_money(reimbursable),
+            }
+        )
+    if non_reimb_ops:
+        rows.append(
+            {
+                "type": "Невозмещаемые расходы",
+                "method": "get_realizsum",
+                "source": f"операции {compact_unique([str(op.get('oper_num')) for op in non_reimb_ops])}",
+                "amount": live_money(non_reimbursable),
+            }
+        )
+    return rows
 
 
 def build_spec_snapshot_from_parts(
@@ -5716,6 +5716,7 @@ def build_client_spec_row(
         reimbursable=reimbursable,
         non_reimbursable=non_reimbursable,
     )
+    calculation_rows = build_spec_calculation_rows(operations, reimbursable, non_reimbursable)
     compare_report: dict[str, object] | None = None
     compare_error = ""
     if compare_1c and onec_base_source is not None:
@@ -5723,9 +5724,10 @@ def build_client_spec_row(
             compare_snapshot = build_spec_snapshot_from_parts(spec_id, operations, erp_docs, payments)
             onec_source = filter_onec_postgres_base_source_for_snapshot(onec_base_source, compare_snapshot)
             compare_report = compare_onec_docs_with_erp_snapshot(spec_id, onec_source, compare_snapshot)
-            detail_docs.extend(build_compare_detail_docs(compare_report, spec_id))
+            detail_docs = build_compare_detail_docs(compare_report, spec_id)
         except Exception as exc:
             compare_error = str(exc)
+            detail_docs = []
             detail_docs.append(
                 detail_doc(
                     f"spec-{spec_id}-compare-error",
@@ -5755,6 +5757,7 @@ def build_client_spec_row(
         "isParent": False,
         "defaultExpanded": False,
         "children": [],
+        "calculationRows": calculation_rows,
         "detailDocs": detail_docs,
         "invoiceLabel": joined_unique_lines([one_line(doc.get("number")) or one_line(doc.get("code1c")) for doc in invoices]),
         "invoiceSum": invoice_total,
