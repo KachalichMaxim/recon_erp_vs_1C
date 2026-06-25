@@ -1615,7 +1615,8 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
       const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope(), compare_1c: '1' });
       const dogId = getDogId();
       if (dogId) query.set('dog_id', dogId);
-      const sourceMode = getParam('source') || getParam('source_mode');
+      const currentParams = new URLSearchParams(window.location.search);
+      const sourceMode = currentParams.get('source') || currentParams.get('source_mode');
       if (sourceMode) query.set('source', sourceMode);
       window.location.href = apiUrl(`/api/reconciliation/client-matrix.xlsx?${query.toString()}`);
       return;
