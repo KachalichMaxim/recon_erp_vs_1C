@@ -308,11 +308,6 @@
   .matrix-status-cell .matrix-badges { flex-wrap: wrap; overflow: visible; }
   .matrix-detail { margin: 0; padding: 9px 10px 10px; }
   .matrix-detail-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; margin-bottom: 6px; }
-  .matrix-calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px; margin-bottom: 8px; }
-  .matrix-calc-card { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 7px 9px; min-width: 0; }
-  .matrix-calc-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; margin-bottom: 4px; }
-  .matrix-calc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: baseline; font-size: 11px; line-height: 1.35; }
-  .matrix-calc-meta { color: var(--muted); font-size: 10px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .matrix-detail-grid { display: grid; grid-template-columns: 0.78fr 1.25fr 1.05fr 0.95fr 0.8fr 1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
   .matrix-detail-grid > div { padding: 6px 8px; border-bottom: 1px solid var(--border); min-width: 0; }
   .matrix-detail-grid > div:nth-child(6n) { text-align: right; }
@@ -1602,6 +1597,16 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
     window.setTimeout(() => setCopyState(''), 1800);
   };
   const handleExport = () => {
+    const clientId = getClientId();
+    if (clientId) {
+      const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope(), compare_1c: '1' });
+      const dogId = getDogId();
+      if (dogId) query.set('dog_id', dogId);
+      const sourceMode = getParam('source') || getParam('source_mode');
+      if (sourceMode) query.set('source', sourceMode);
+      window.location.href = apiUrl(`/api/reconciliation/client-matrix.xlsx?${query.toString()}`);
+      return;
+    }
     const blob = new Blob(['\ufeff' + serializeMatrix(';')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1718,22 +1723,6 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
                       <td colSpan="10">
                         <div className="matrix-detail">
                           <div className="matrix-detail-title">Документы внутри спецификации · {reconciliationStatusText(row)}</div>
-                          {!!row.calculationRows?.length && (
-                            <div className="matrix-calc">
-                              <div className="matrix-calc-card">
-                                <div className="matrix-calc-title">Расчет ERP</div>
-                                {row.calculationRows.map((calc, idx) => (
-                                  <div key={`${row.id}-calc-${idx}`} style={{ marginTop: idx ? 6 : 0 }}>
-                                    <div className="matrix-calc-row">
-                                      <span>{calc.type}</span>
-                                      <span className="mono">{fmtMoney(calc.amount)}</span>
-                                    </div>
-                                    <div className="matrix-calc-meta">{calc.method} · {calc.source}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                           <div className="matrix-detail-grid">
                             <div className="matrix-detail-head">Статус проверки</div>
                             <div className="matrix-detail-head">Тип</div>

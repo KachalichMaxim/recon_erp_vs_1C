@@ -5460,35 +5460,6 @@ def build_spec_detail_docs(
     return details
 
 
-def build_spec_calculation_rows(
-    operations: list[dict[str, object]],
-    reimbursable: float,
-    non_reimbursable: float,
-) -> list[dict[str, object]]:
-    rows: list[dict[str, object]] = []
-    reimb_ops = [op for op in operations if operation_bucket(op) == "reimbursable"]
-    non_reimb_ops = [op for op in operations if operation_bucket(op) == "non_reimbursable"]
-    if reimb_ops:
-        rows.append(
-            {
-                "type": "Возмещаемые расходы",
-                "method": "get_realizsum",
-                "source": f"операции {compact_unique([str(op.get('oper_num')) for op in reimb_ops])}",
-                "amount": live_money(reimbursable),
-            }
-        )
-    if non_reimb_ops:
-        rows.append(
-            {
-                "type": "Невозмещаемые расходы",
-                "method": "get_realizsum",
-                "source": f"операции {compact_unique([str(op.get('oper_num')) for op in non_reimb_ops])}",
-                "amount": live_money(non_reimbursable),
-            }
-        )
-    return rows
-
-
 def build_spec_snapshot_from_parts(
     spec_id: int,
     operations: list[dict[str, object]],
@@ -5716,7 +5687,6 @@ def build_client_spec_row(
         reimbursable=reimbursable,
         non_reimbursable=non_reimbursable,
     )
-    calculation_rows = build_spec_calculation_rows(operations, reimbursable, non_reimbursable)
     compare_report: dict[str, object] | None = None
     compare_error = ""
     if compare_1c and onec_base_source is not None:
@@ -5757,7 +5727,6 @@ def build_client_spec_row(
         "isParent": False,
         "defaultExpanded": False,
         "children": [],
-        "calculationRows": calculation_rows,
         "detailDocs": detail_docs,
         "invoiceLabel": joined_unique_lines([one_line(doc.get("number")) or one_line(doc.get("code1c")) for doc in invoices]),
         "invoiceSum": invoice_total,
@@ -6234,6 +6203,210 @@ def snapshot_to_xlsx(snapshot: dict[str, object]) -> bytes:
     return output.getvalue()
 
 
+def split_matrix_lines(value: object) -> list[str]:
+    text = str(value or "").strip()
+    if not text or text == "—":
+        return []
+    return [one_line(part) for part in text.splitlines() if one_line(part)]
+
+
+def collect_matrix_spec_rows(node: dict[str, object]) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    if node.get("kind") == "spec":
+        rows.append(node)
+    children = node.get("children")
+    if isinstance(children, list):
+        for child in children:
+            if isinstance(child, dict):
+                rows.extend(collect_matrix_spec_rows(child))
+    return rows
+
+
+def matrix_snapshot_to_accounting_xlsx(snapshot: dict[str, object]) -> bytes:
+    if Workbook is None:
+        raise RuntimeError("openpyxl is not installed; XLSX export is unavailable")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Выгрузка"
+
+    headers = [
+        "№ спецификации",
+        "",
+        "Счет",
+        "Сумма по счету",
+        "Сумма оплаты",
+        "",
+        "Возмещаемые расходы",
+        "Невозмещаемые расходы",
+        "",
+        "№ счф",
+        "(+/-)",
+    ]
+    ws.append(headers)
+
+    fills = {
+        "header": PatternFill("solid", fgColor="D9D7D2"),
+        "spec": PatternFill("solid", fgColor="F3F1ED"),
+        "invoice": PatternFill("solid", fgColor="EEF6FF"),
+        "payment": PatternFill("solid", fgColor="EEF8F0"),
+        "expense": PatternFill("solid", fgColor="FFF5DF"),
+        "sf": PatternFill("solid", fgColor="F7F4EF"),
+        "delta_ok": PatternFill("solid", fgColor="E2F0D9"),
+        "delta_bad": PatternFill("solid", fgColor="FCE4D6"),
+        "sep": PatternFill("solid", fgColor="FAFAF9"),
+    }
+    border = Border(
+        left=Side(style="thin", color="D6D3CD"),
+        right=Side(style="thin", color="D6D3CD"),
+        top=Side(style="thin", color="D6D3CD"),
+        bottom=Side(style="thin", color="D6D3CD"),
+    )
+    money_format = '#,##0.00" р.";[Red]-#,##0.00" р.";0.00" р."'
+
+    for cell in ws[1]:
+        cell.fill = fills["header"]
+        cell.font = Font(bold=True, color="1F2933")
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = border
+
+    model = snapshot.get("matrix_model") if isinstance(snapshot.get("matrix_model"), dict) else {}
+    clients = model.get("clients") if isinstance(model.get("clients"), list) else []
+    spec_rows: list[dict[str, object]] = []
+    for client in clients:
+        if isinstance(client, dict) and isinstance(client.get("root"), dict):
+            spec_rows.extend(collect_matrix_spec_rows(client["root"]))
+
+    row_idx = 2
+    merge_columns = [1, 5, 7, 8, 10, 11]
+    for spec in spec_rows:
+        detail_docs = spec.get("detailDocs") if isinstance(spec.get("detailDocs"), list) else []
+        invoice_docs = [
+            doc for doc in detail_docs
+            if isinstance(doc, dict) and "Счет покупателю" in one_line(doc.get("type"))
+        ]
+        if invoice_docs:
+            invoice_lines = [
+                {
+                    "number": one_line(doc.get("erp")) or one_line(doc.get("onec")),
+                    "amount": live_money(doc.get("amount")),
+                }
+                for doc in invoice_docs
+            ]
+        else:
+            labels = split_matrix_lines(spec.get("invoiceLabel"))
+            invoice_lines = [{"number": label, "amount": None} for label in labels]
+        if not invoice_lines:
+            invoice_lines = [{"number": "—", "amount": None}]
+
+        start = row_idx
+        for idx, invoice in enumerate(invoice_lines):
+            ws.cell(row_idx, 3, invoice.get("number") or "—")
+            amount = invoice.get("amount")
+            if isinstance(amount, (int, float)) and abs(float(amount)) > 0.01:
+                ws.cell(row_idx, 4, amount)
+            elif idx == 0:
+                ws.cell(row_idx, 4, live_money(spec.get("invoiceSum")))
+            row_idx += 1
+        end = row_idx - 1
+
+        ws.cell(start, 1, spec.get("name") or spec.get("specNo") or "—")
+        ws.cell(start, 5, live_money(spec.get("paymentSum")))
+        ws.cell(start, 7, live_money(spec.get("reimbursableSum")))
+        ws.cell(start, 8, live_money(spec.get("nonReimbursableSum")))
+        ws.cell(start, 10, "\n".join(split_matrix_lines(spec.get("sfLabel"))) or "—")
+        ws.cell(start, 11, live_money(spec.get("delta")))
+
+        if end > start:
+            for col in merge_columns:
+                ws.merge_cells(start_row=start, start_column=col, end_row=end, end_column=col)
+
+        for r in range(start, end + 1):
+            for c in range(1, 12):
+                cell = ws.cell(r, c)
+                cell.border = border
+                cell.alignment = Alignment(vertical="center", wrap_text=True)
+            ws.cell(r, 1).fill = fills["spec"]
+            ws.cell(r, 2).fill = fills["sep"]
+            ws.cell(r, 3).fill = fills["invoice"]
+            ws.cell(r, 4).fill = fills["invoice"]
+            ws.cell(r, 5).fill = fills["payment"]
+            ws.cell(r, 6).fill = fills["sep"]
+            ws.cell(r, 7).fill = fills["expense"]
+            ws.cell(r, 8).fill = fills["expense"]
+            ws.cell(r, 9).fill = fills["sep"]
+            ws.cell(r, 10).fill = fills["sf"]
+            ws.cell(r, 11).fill = fills["delta_ok"] if abs(live_money(spec.get("delta"))) <= 0.01 else fills["delta_bad"]
+        for col in [4, 5, 7, 8, 11]:
+            ws.cell(start, col).number_format = money_format
+            ws.cell(start, col).alignment = Alignment(horizontal="right", vertical="center", wrap_text=True)
+        ws.cell(start, 1).font = Font(bold=True)
+        sf_lines = max(1, len(split_matrix_lines(spec.get("sfLabel"))))
+        ws.row_dimensions[start].height = max(28, 16 * sf_lines)
+
+    totals = model.get("totals") if isinstance(model.get("totals"), dict) else {}
+    total_row = row_idx + 1
+    ws.cell(total_row, 1, "ИТОГО")
+    ws.cell(total_row, 4, live_money(totals.get("invoiceSum")))
+    ws.cell(total_row, 5, live_money(totals.get("paymentSum")))
+    ws.cell(total_row, 7, live_money(totals.get("reimbursableSum")))
+    ws.cell(total_row, 8, live_money(totals.get("nonReimbursableSum")))
+    ws.cell(total_row, 11, live_money(totals.get("delta")))
+    for c in range(1, 12):
+        cell = ws.cell(total_row, c)
+        cell.fill = fills["header"]
+        cell.border = border
+        cell.font = Font(bold=True)
+    for col in [4, 5, 7, 8, 11]:
+        ws.cell(total_row, col).number_format = money_format
+
+    rules = wb.create_sheet("Правила")
+    rules_rows = [
+        ("Поле", "Источник", "Правило"),
+        ("№ спецификации", "ERP view_specs / veda_specs", "Тип и номер поставки из ERP; строка объединяется по счетам."),
+        ("Счет", "ERP veda_schets, f_type=1", "Только счета покупателю; счета поставщиков не попадают в эту колонку."),
+        ("Сумма по счету", "ERP veda_schets.f_sum", "По каждому счету отдельная строка; разные валюты не суммировать без курса."),
+        ("Сумма оплаты", "ERP get_paidsum / veda_acchist_docs.f_clssum", "Сумма оплат клиента по поставке."),
+        ("Возмещаемые расходы", "ERP get_realizsum по операциям f_isvozm=1", "Итог по поставке, объединяется по строкам счетов."),
+        ("Невозмещаемые расходы", "ERP get_realizsum по операциям f_isvozm=2", "Итог по поставке, объединяется по строкам счетов."),
+        ("№ счф", "ERP/1С закрывающие документы", "Каждый номер документа внутри объединенной ячейки с переносом строки."),
+        ("(+/-)", "Сумма оплаты - возмещаемые - невозмещаемые", "Сальдо взаиморасчетов по поставке."),
+    ]
+    for row in rules_rows:
+        rules.append(row)
+    for cell in rules[1]:
+        cell.fill = fills["header"]
+        cell.font = Font(bold=True)
+    for row_cells in rules.iter_rows():
+        for cell in row_cells:
+            cell.border = border
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+
+    widths = {
+        "A": 24,
+        "B": 3,
+        "C": 18,
+        "D": 18,
+        "E": 18,
+        "F": 3,
+        "G": 20,
+        "H": 22,
+        "I": 3,
+        "J": 48,
+        "K": 18,
+    }
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+    ws.freeze_panes = "A2"
+    for sheet in [rules]:
+        for col_idx in range(1, sheet.max_column + 1):
+            sheet.column_dimensions[get_column_letter(col_idx)].width = 26 if col_idx > 1 else 20
+
+    output = BytesIO()
+    wb.save(output)
+    return output.getvalue()
+
+
 class ReconciliationApiHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(STATIC_ROOT), **kwargs)
@@ -6283,6 +6456,9 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
             return
         if parsed.path == "/api/reconciliation/client-matrix":
             self.handle_client_matrix(parsed.query)
+            return
+        if parsed.path == "/api/reconciliation/client-matrix.xlsx":
+            self.handle_client_matrix_xlsx(parsed.query)
             return
         if parsed.path == "/api/reconciliation/erp-export.xlsx":
             self.handle_erp_export_xlsx(parsed.query)
@@ -6417,6 +6593,47 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
             return
 
         self.write_json(HTTPStatus.OK, snapshot)
+
+    def handle_client_matrix_xlsx(self, query_str: str):
+        params = parse_qs(query_str)
+        client_id = self.parse_positive_int(params, ["client_id", "clientId", "legal_id", "contact_id"])
+        if not client_id:
+            self.write_json(HTTPStatus.BAD_REQUEST, {"ok": False, "error": "client_id is required and must be positive integer"})
+            return
+        dog_id = self.parse_positive_int(params, ["dog_id", "dogId"], 0) or 0
+        limit = self.parse_positive_int(params, ["limit"], 25) or 25
+        scope = normalize_text((params.get("scope") or [params.get("client_scope", ["auto"])[0]])[0]).lower() or "auto"
+        if scope not in {"auto", "legal", "contact"}:
+            scope = "auto"
+        compare_raw = normalize_text((params.get("compare_1c") or params.get("compare1c") or params.get("with_1c") or ["1"])[0]).lower()
+        compare_1c = compare_raw not in {"0", "false", "no", "off"}
+        source_mode = normalize_text((params.get("source") or params.get("source_mode") or ["postgresql"])[0]).lower() or "postgresql"
+
+        try:
+            snapshot = build_client_matrix_snapshot(
+                client_id=client_id,
+                dog_id=dog_id,
+                limit=limit,
+                scope=scope,
+                compare_1c=compare_1c,
+                source_mode=source_mode,
+            )
+            body = matrix_snapshot_to_accounting_xlsx(snapshot)
+        except Exception as exc:
+            self.write_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
+            return
+
+        filename_bits = [f"client_{client_id}"]
+        if dog_id:
+            filename_bits.append(f"dog_{dog_id}")
+        filename_bits.append("matrix")
+        filename = "akt_sverki_" + "_".join(filename_bits) + ".xlsx"
+        self.write_binary(
+            HTTPStatus.OK,
+            body,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename,
+        )
 
     def handle_erp_export_xlsx(self, query_str: str):
         spec_id = self.parse_spec_id_from_query(query_str)
