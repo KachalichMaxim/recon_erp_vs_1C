@@ -5548,6 +5548,10 @@ def compare_matrix_badges(report: dict[str, object] | None, delta: float, fallba
     mismatch_total = sql_int(summary.get(STATUS_FIELDS_MISMATCH))
     not_comparable = sql_int(summary.get(STATUS_NOT_COMPARABLE))
     total = sql_int(summary.get("total"))
+    match_count = sql_int(summary.get(STATUS_MATCH))
+    has_compare_problem = bool(not_found_1c or not_found_erp or mismatch_total or not_comparable)
+    if total and not has_compare_problem:
+        badges.append({"key": "ok", "label": f"1С ОК {match_count}/{total}"})
     if not_found_1c:
         badges.append({"key": "no1c", "label": f"Нет в 1С {not_found_1c}"})
     if not_found_erp:

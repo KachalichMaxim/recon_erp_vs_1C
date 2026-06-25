@@ -308,10 +308,10 @@
   .matrix-status-cell .matrix-badges { flex-wrap: wrap; overflow: visible; }
   .matrix-detail { margin: 0; padding: 9px 10px 10px; }
   .matrix-detail-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; margin-bottom: 6px; }
-  .matrix-detail-grid { display: grid; grid-template-columns: 1.1fr 1.1fr 0.9fr 0.9fr 1.1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+  .matrix-detail-grid { display: grid; grid-template-columns: 0.78fr 1.25fr 1.05fr 0.95fr 0.8fr 1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
   .matrix-detail-grid > div { padding: 6px 8px; border-bottom: 1px solid var(--border); min-width: 0; }
-  .matrix-detail-grid > div:nth-child(5n) { text-align: right; }
-  .matrix-detail-grid > div:nth-last-child(-n+5) { border-bottom: none; }
+  .matrix-detail-grid > div:nth-child(6n) { text-align: right; }
+  .matrix-detail-grid > div:nth-last-child(-n+6) { border-bottom: none; }
   .matrix-detail-head { background: var(--bg-sunken); color: var(--muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.045em; }
   .matrix-empty { padding: 36px; text-align: center; color: var(--muted); font-size: 13px; }
   @media (max-width: 1180px) {
@@ -1536,6 +1536,20 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
       {(badges || []).map((b, idx) => <span className={`matrix-badge ${b.key}`} key={`${b.key}-${idx}`}>{b.label}</span>)}
     </div>
   );
+  const reconciliationStatusText = (row) => {
+    const summary = row.reconciliation?.summary || {};
+    const total = Number(summary.total || 0);
+    if (!total) return 'Статус проверки: сверка с 1С не запускалась';
+    const match = Number(summary.MATCH || 0);
+    const problems =
+      Number(summary.NOT_FOUND_IN_1C || 0) +
+      Number(summary.NOT_FOUND_IN_ERP || 0) +
+      Number(summary.FIELDS_MISMATCH || 0) +
+      Number(summary.NOT_COMPARABLE || 0);
+    return problems
+      ? `Статус проверки: 1С ОК ${match}/${total}, проблем ${problems}`
+      : `Статус проверки: 1С ОК ${match}/${total}`;
+  };
   const deltaClass = (value) => moneyValue(value) > 0.01 ? 'pos' : moneyValue(value) < -0.01 ? 'neg' : '';
   const matrixColumns = [
     'Иерархия',
@@ -1698,8 +1712,9 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
                     <tr className="matrix-row detail-host">
                       <td colSpan="10">
                         <div className="matrix-detail">
-                          <div className="matrix-detail-title">Документы внутри спецификации</div>
+                          <div className="matrix-detail-title">Документы внутри спецификации · {reconciliationStatusText(row)}</div>
                           <div className="matrix-detail-grid">
+                            <div className="matrix-detail-head">Статус проверки</div>
                             <div className="matrix-detail-head">Тип</div>
                             <div className="matrix-detail-head">ERP</div>
                             <div className="matrix-detail-head">1С</div>
@@ -1707,7 +1722,8 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
                             <div className="matrix-detail-head">Сумма</div>
                             {row.detailDocs.map(detail => (
                               <React.Fragment key={detail.id}>
-                                <div><span className={`matrix-badge ${detail.status.key}`}>{detail.status.label}</span> <span style={{ marginLeft: 6 }}>{detail.type}</span></div>
+                                <div><span className={`matrix-badge ${detail.status.key}`}>{detail.status.label}</span></div>
+                                <div>{detail.type}</div>
                                 <div className="mono">{detail.erp}</div>
                                 <div className="mono">{detail.onec}</div>
                                 <div className="mono">{detail.date}</div>
