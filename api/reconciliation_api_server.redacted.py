@@ -5552,7 +5552,10 @@ def build_compare_detail_docs(report: dict[str, object] | None, spec_id: int) ->
         badge = compare_status_badge(row)
         erp_num = one_line(row.get("erp_number")) or one_line(row.get("erp_code1c")) or (f"ERP-{sql_int(row.get('erp_doc_id'))}" if sql_int(row.get("erp_doc_id")) else "")
         onec_num = one_line(row.get("onec_number")) or one_line(row.get("onec_code1c")) or one_line(row.get("onec_ref_id"))
-        doc_type = one_line(row.get("erp_type")) or one_line(row.get("onec_type")) or one_line(row.get("erp_doc_kind")) or one_line(row.get("onec_doc_kind")) or "Документ"
+        erp_kind = one_line(row.get("erp_doc_kind"))
+        doc_type = (
+            one_line(row.get("operation_title")) if erp_kind == "act" else ""
+        ) or one_line(row.get("erp_type")) or one_line(row.get("onec_type")) or erp_kind or one_line(row.get("onec_doc_kind")) or "Документ"
         details.append(
             detail_doc(
                 f"spec-{spec_id}-compare-{idx}",
