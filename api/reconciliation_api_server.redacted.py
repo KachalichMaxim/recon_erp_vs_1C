@@ -5101,6 +5101,13 @@ def one_line(value: object) -> str:
     return " ".join(str(value or "").replace("\t", " ").replace("\r", " ").replace("\n", " ").split())
 
 
+def meaningful_text(value: object) -> str:
+    text = one_line(value)
+    if text in {"", "_", "-", "0"}:
+        return ""
+    return text
+
+
 def joined_unique_lines(values: list[str]) -> str:
     seen: set[str] = set()
     result: list[str] = []
@@ -5232,7 +5239,7 @@ SELECT
     COALESCE(cl.f_abbr, '') AS legal_abbr,
     COALESCE(cl.f_inn, '') AS legal_inn,
     COALESCE(contact.f_id, 0) AS contact_id,
-    COALESCE(NULLIF(contact.f_cname, ''), NULLIF(contact.f_name, ''), cl.f_cname, '') AS contact_name,
+    COALESCE(NULLIF(NULLIF(contact.f_cname, ''), '_'), NULLIF(NULLIF(contact.f_name, ''), '_'), cl.f_cname, '') AS contact_name,
     COALESCE(contact.f_inn, '') AS contact_inn
 FROM veda_specs s
 JOIN veda_dogs d
@@ -5386,7 +5393,7 @@ def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 2
             contact_id,
             {
                 "id": contact_id,
-                "name": one_line(spec.get("contact_name")) or one_line(spec.get("legal_name")) or f"client_id {client_id}",
+                "name": meaningful_text(spec.get("contact_name")) or meaningful_text(spec.get("legal_name")) or f"client_id {client_id}",
                 "inn": one_line(spec.get("contact_inn")),
                 "legals": {},
             },
@@ -5396,7 +5403,7 @@ def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 2
             legal_id,
             {
                 "id": legal_id,
-                "name": one_line(spec.get("legal_abbr")) or one_line(spec.get("legal_name")) or f"ЮЛ {legal_id}",
+                "name": meaningful_text(spec.get("legal_abbr")) or meaningful_text(spec.get("legal_name")) or f"ЮЛ {legal_id}",
                 "inn": one_line(spec.get("legal_inn")),
                 "dogs": {},
             },
@@ -5486,8 +5493,8 @@ def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 2
             "request_label": f"Матрица client_id {client_id}",
             "spec_id": 0,
             "client_id": sql_int(first_spec.get("legal_id")),
-            "client_name": one_line(first_spec.get("contact_name")) or one_line(first_spec.get("legal_name")),
-            "client_inn": one_line(first_spec.get("contact_inn")) or one_line(first_spec.get("legal_inn")),
+            "client_name": meaningful_text(first_spec.get("contact_name")) or meaningful_text(first_spec.get("legal_name")),
+            "client_inn": meaningful_text(first_spec.get("contact_inn")) or meaningful_text(first_spec.get("legal_inn")),
             "main_dog_id": dog_id or sql_int(first_spec.get("dog_id")),
             "main_dog_number": one_line(first_spec.get("dog_number")),
             "main_dog_code1c": one_line(first_spec.get("dog_code1c")),
