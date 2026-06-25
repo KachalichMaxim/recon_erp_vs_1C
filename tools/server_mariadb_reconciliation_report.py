@@ -115,15 +115,20 @@ def resolve_specs(api: Any, dog_id: int, spec_nums: list[str]) -> list[ResolvedS
 SELECT
     s.f_id,
     COALESCE(s.f_num, '') AS spec_num,
-    COALESCE(vs.spec_num_short, s.f_num, '') AS spec_num_short,
-    COALESCE(vs.spec_type, '') AS spec_type,
-    COALESCE(vs.spec_subtype, '') AS spec_subtype,
-    COALESCE(vs.spec_subtypeid, s.f_subtype, 0) AS spec_subtype_id,
-    COALESCE(DATE_FORMAT(vs.spec_date, '%Y-%m-%d'), DATE_FORMAT(s.f_dt, '%Y-%m-%d'), '') AS spec_date,
-    COALESCE(vs.spec_name, s.f_tovar, '') AS spec_name,
+    COALESCE(s.f_num, '') AS spec_num_short,
+    COALESCE(NULLIF(spec_type.f_dopprstr, ''), NULLIF(spec_type.f_name, ''), '') AS spec_type,
+    COALESCE(NULLIF(spec_subtype.f_dopprstr, ''), NULLIF(spec_subtype.f_name, ''), '') AS spec_subtype,
+    COALESCE(s.f_subtype, 0) AS spec_subtype_id,
+    COALESCE(DATE_FORMAT(s.f_dt, '%Y-%m-%d'), '') AS spec_date,
+    COALESCE(s.f_tovar, '') AS spec_name,
     COALESCE(s.f_dogid, 0) AS dog_id
 FROM veda_specs s
-LEFT JOIN view_specs vs ON vs.spec_id = s.f_id
+LEFT JOIN veda_spr spec_type
+       ON spec_type.f_type = 33
+      AND spec_type.f_num = s.f_typez
+LEFT JOIN veda_spr spec_subtype
+       ON spec_subtype.f_type = 130
+      AND spec_subtype.f_num = s.f_subtype
 WHERE s.f_dogid = {dog_id}
   AND CAST(s.f_num AS CHAR) IN ({in_list})
 ORDER BY FIELD(CAST(s.f_num AS CHAR), {order_expr}), s.f_id;
@@ -414,7 +419,7 @@ def build_report(api: Any, args: argparse.Namespace) -> dict[str, Any]:
         },
         "context": context,
         "sql_sources": {
-            "hierarchy": "veda_contacts -> veda_clients.f_contactid -> veda_dogs.f_contrid -> veda_specs.f_dogid; label/type from view_specs.spec_type/spec_subtype/spec_num_short",
+            "hierarchy": "veda_contacts -> veda_clients.f_contactid -> veda_dogs.f_contrid -> veda_specs.f_dogid; label/type from veda_spr(f_type=33/130), view_specinv/view_specs are not production sources",
             "operations": "veda_spec_invoices with f_parenttype in (2,4); f_parenttype=4 resolved through veda_categs f_ctgtype=24/f_objecttype=5",
             "payments": "get_paidsum(oper.f_id) and control SUM(veda_acchist_docs.f_clssum); JOIN veda_acchist ah ON ah.f_id = ahd.f_acchistid; ahd.f_doctype=3; ah.f_type=0",
             "realization": "get_realizsum(oper.f_id), split by veda_spec_invoices.f_isvozm",

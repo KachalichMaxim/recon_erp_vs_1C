@@ -16,8 +16,10 @@
 1. Клиент: `veda_contacts`.
 2. ЮЛ клиента: `veda_clients`, связь `veda_clients.f_contactid = veda_contacts.f_id`.
 3. Договор: `veda_dogs`, связь `veda_dogs.f_contrid = veda_clients.f_id`.
-4. Поставка / заявка / спецификация: `view_specs` + `veda_specs`, связь `veda_specs.f_dogid = veda_dogs.f_id`.
+4. Поставка / заявка / спецификация: `veda_specs`, связь `veda_specs.f_dogid = veda_dogs.f_id`; тип/подтип расшифровываются через `veda_spr`.
 5. Документы внутри поставки: счета, оплаты, акты, СФ/УПД.
+
+Важно: в production-алгоритме нельзя использовать `view_specinv`, `view_specs` и другие view как источник связей. Все связи в ТЗ строятся только по исходным таблицам ERP. View можно использовать только как временный аналитический ориентир при ручном аудите, но не в PHP-реализации.
 
 На уровнях клиент / ЮЛ / договор показываются только агрегаты дочерних поставок. Документы раскрываются только внутри поставки.
 
@@ -28,20 +30,25 @@ SELECT
     d.f_id  AS dog_id,
     s.f_id  AS spec_id,
     s.f_num AS spec_num,
-    vs.spec_type,
-    vs.spec_subtype,
-    vs.spec_num_short
+    COALESCE(NULLIF(spec_type.f_dopprstr, ''), spec_type.f_name) AS spec_type,
+    COALESCE(NULLIF(spec_subtype.f_dopprstr, ''), spec_subtype.f_name) AS spec_subtype,
+    s.f_num AS spec_num_short
 FROM veda_contacts c
 JOIN veda_clients cl ON cl.f_contactid = c.f_id
 JOIN veda_dogs d     ON d.f_contrid = cl.f_id
 JOIN veda_specs s    ON s.f_dogid = d.f_id
-LEFT JOIN view_specs vs ON vs.spec_id = s.f_id
+LEFT JOIN veda_spr spec_type
+       ON spec_type.f_type = 33
+      AND spec_type.f_num = s.f_typez
+LEFT JOIN veda_spr spec_subtype
+       ON spec_subtype.f_type = 130
+      AND spec_subtype.f_num = s.f_subtype
 WHERE c.f_id = :contact_id
   AND (:legal_id IS NULL OR cl.f_id = :legal_id)
   AND (:dog_id IS NULL OR d.f_id = :dog_id);
 ```
 
-Название строки поставки формируется из ERP-типа: `{view_specs.spec_type} №{view_specs.spec_number}`. Нельзя хардкодить `Спецификация {num}`, потому что в ERP есть разные типы: заявка, спецификация, сертификация и другие подтипы. Если `view_specs` недоступен, fallback: `veda_specs.f_typez`, `veda_specs.f_subtype`, `veda_specs.f_num`, но расшифровка должна быть через ERP-справочник/представление, а не через константу в интерфейсе.
+Название строки поставки формируется из исходных таблиц: `{veda_spr(f_type=33, f_num=veda_specs.f_typez)} №{veda_specs.f_num}`. Подтип при необходимости берется из `veda_spr(f_type=130, f_num=veda_specs.f_subtype)`. Нельзя хардкодить `Спецификация {num}`, потому что в ERP есть разные типы: заявка, спецификация, сертификация и другие подтипы.
 
 ## 1.1 Ограничения выборки
 
@@ -61,7 +68,7 @@ WHERE c.f_id = :contact_id
 | --- | --- | --- | --- |
 | Контрагент | `contact_id`, `client_id`, ИНН, КПП, код 1С ЮЛ | `getClients`: код, ИНН, КПП, название, удален | контрагент найден и не удален; ИНН/КПП не конфликтуют |
 | Договор | `dog_id`, номер, дата, организация, `dog_code1c` | `getClients.dogs` или `getcoacsuinfo`: код договора, номер, организация | код/номер договора и организация совпадают |
-| Поставка | `spec_id`, `f_num`, `view_specs.spec_type`, `spec_subtype`, `f_kod1cb/f_kod1cp` | договоры-заявки/спецификации из 1С по кодам | тип и номер выводятся из ERP; полный ОК возможен только если код 1С найден |
+| Поставка | `veda_specs.f_id`, `f_num`, `f_typez`, `f_subtype`, `f_kod1cb/f_kod1cp`, расшифровка через `veda_spr` | договоры-заявки/спецификации из 1С по кодам | тип и номер выводятся из исходных таблиц ERP; полный ОК возможен только если код 1С найден |
 | Счет | покупательские `veda_schets.f_type=1` по операциям поставки | счет 1С / расшифровка счета из `getAcchist` | номер, дата, сумма, валюта, организация, контрагент |
 | Оплата | `veda_acchist_docs.f_clssum`, `f_docid`, `f_acchistid` | `getAcchist`: банковский документ и расшифровка платежа | распределенная доля, а не полная сумма банковской выписки |
 | Реализация | `get_realizsum(oper_id)` по операциям `f_isvozm=1/2` | `getAkts`, `getEDOArh/getEDPacket`: акты, УПД/СФ, строки услуг | сумма, НДС, закрывающий документ, договор строки |
@@ -202,7 +209,7 @@ XLSX должен быть бухгалтерской формой, а не ко
 
 | Колонка | Что кладем | Формат |
 | --- | --- | --- |
-| `№ спецификации` | `{view_specs.spec_type} №{view_specs.spec_number}`; если тип пустой, `Поставка №{veda_specs.f_num}` | объединить по числу строк счетов |
+| `№ спецификации` | `{veda_spr.f_name/f_dopprstr по f_type=33} №{veda_specs.f_num}`; если тип пустой, `Поставка №{veda_specs.f_num}` | объединить по числу строк счетов |
 | `Счет` | каждый счет покупателю отдельной строкой | не объединять |
 | `Сумма по счету` | сумма соответствующего счета + валюта | не суммировать разные валюты без курса |
 | `Сумма оплаты` | `paid_total_get_paidsum` | объединить по поставке |

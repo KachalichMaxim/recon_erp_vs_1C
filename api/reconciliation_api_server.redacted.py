@@ -5584,12 +5584,12 @@ def build_client_specs_query(client_id: int, dog_id: int, limit: int, scope: str
 SELECT
     s.f_id,
     COALESCE(s.f_num, '') AS spec_num,
-    COALESCE(vs.spec_num_short, s.f_num, '') AS spec_num_short,
-    COALESCE(vs.spec_type, '') AS spec_type,
-    COALESCE(vs.spec_subtype, '') AS spec_subtype,
-    COALESCE(vs.spec_subtypeid, s.f_subtype, 0) AS spec_subtype_id,
-    COALESCE(DATE_FORMAT(vs.spec_date, '%Y-%m-%d'), DATE_FORMAT(s.f_dt, '%Y-%m-%d'), '') AS spec_date,
-    COALESCE(vs.spec_name, s.f_tovar, '') AS spec_name,
+    COALESCE(s.f_num, '') AS spec_num_short,
+    COALESCE(NULLIF(spec_type.f_dopprstr, ''), NULLIF(spec_type.f_name, ''), '') AS spec_type,
+    COALESCE(NULLIF(spec_subtype.f_dopprstr, ''), NULLIF(spec_subtype.f_name, ''), '') AS spec_subtype,
+    COALESCE(s.f_subtype, 0) AS spec_subtype_id,
+    COALESCE(DATE_FORMAT(s.f_dt, '%Y-%m-%d'), '') AS spec_date,
+    COALESCE(s.f_tovar, '') AS spec_name,
     COALESCE(d.f_id, 0) AS dog_id,
     COALESCE(d.f_dogname, '') AS dog_number,
     COALESCE(d.f_kod1c, '') AS dog_code1c,
@@ -5608,8 +5608,12 @@ JOIN veda_clients cl
     ON cl.f_id = d.f_contrid
 LEFT JOIN veda_contacts contact
     ON contact.f_id = cl.f_contactid
-LEFT JOIN view_specs vs
-    ON vs.spec_id = s.f_id
+LEFT JOIN veda_spr spec_type
+    ON spec_type.f_type = 33
+   AND spec_type.f_num = s.f_typez
+LEFT JOIN veda_spr spec_subtype
+    ON spec_subtype.f_type = 130
+   AND spec_subtype.f_num = s.f_subtype
 WHERE {client_filter}
   {dog_filter}
 ORDER BY
@@ -6366,7 +6370,7 @@ def matrix_snapshot_to_accounting_xlsx(snapshot: dict[str, object]) -> bytes:
     rules = wb.create_sheet("Правила")
     rules_rows = [
         ("Поле", "Источник", "Правило"),
-        ("№ спецификации", "ERP view_specs / veda_specs", "Тип и номер поставки из ERP; строка объединяется по счетам."),
+        ("№ спецификации", "ERP veda_specs + veda_spr(f_type=33/130)", "Тип и номер поставки из исходных таблиц ERP; view_specinv/view_specs не использовать."),
         ("Счет", "ERP veda_schets, f_type=1", "Только счета покупателю; счета поставщиков не попадают в эту колонку."),
         ("Сумма по счету", "ERP veda_schets.f_sum", "По каждому счету отдельная строка; разные валюты не суммировать без курса."),
         ("Сумма оплаты", "ERP get_paidsum / veda_acchist_docs.f_clssum", "Сумма оплат клиента по поставке."),
