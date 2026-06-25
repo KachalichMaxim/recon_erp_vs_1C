@@ -5182,7 +5182,7 @@ def build_delivery_balance(
         status_label = "По суммам закрыто"
     else:
         status = "open_balance"
-        status_label = "Есть незакрытый остаток"
+        status_label = "Есть переплата" if money_balance > 0.01 else "Есть долг"
 
     warnings = []
     if not documents_closed:
@@ -5277,6 +5277,14 @@ def joined_unique_lines(values: list[str]) -> str:
     return "\n".join(result) if result else "—"
 
 
+def balance_badge_label(delta: float) -> str:
+    if delta > 0.01:
+        return "Переплата"
+    if delta < -0.01:
+        return "Долг"
+    return ""
+
+
 def matrix_badges(issues: list[str], delta: float) -> list[dict[str, str]]:
     badges: list[dict[str, str]] = []
     if "NO_CUSTOMER_INVOICE" in issues:
@@ -5287,8 +5295,9 @@ def matrix_badges(issues: list[str], delta: float) -> list[dict[str, str]]:
         badges.append({"key": "fields", "label": "Оплаты расходятся"})
     if "UNCLASSIFIED_REALIZATION" in issues:
         badges.append({"key": "fields", "label": "Не определена возмещаемость"})
-    if abs(delta) > 0.01:
-        badges.append({"key": "sum", "label": "Остаток"})
+    balance_label = balance_badge_label(delta)
+    if balance_label:
+        badges.append({"key": "sum", "label": balance_label})
     if not badges:
         badges.append({"key": "ok", "label": "ОК"})
     return badges
@@ -5551,8 +5560,9 @@ def compare_matrix_badges(report: dict[str, object] | None, delta: float, fallba
         badges.append({"key": "fields", "label": f"Поля расходятся {other_mismatch}"})
     if not_comparable:
         badges.append({"key": "nokey", "label": f"Нет ключа 1С {not_comparable}"})
-    if abs(delta) > 0.01:
-        badges.append({"key": "sum", "label": "Остаток"})
+    balance_label = balance_badge_label(delta)
+    if balance_label:
+        badges.append({"key": "sum", "label": balance_label})
     if not badges:
         badges.append({"key": "ok", "label": "ОК" if total else "Нет строк сверки"})
     return badges

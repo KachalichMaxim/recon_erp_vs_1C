@@ -71,7 +71,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Долг"
                         }
                       ],
                       "showAmounts": true
@@ -97,7 +97,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Долг"
                         }
                       ],
                       "showAmounts": true
@@ -123,7 +123,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Долг"
                         }
                       ],
                       "showAmounts": true
@@ -149,7 +149,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Долг"
                         }
                       ],
                       "showAmounts": true
@@ -175,7 +175,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Переплата"
                         }
                       ],
                       "showAmounts": true
@@ -201,7 +201,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Переплата"
                         }
                       ],
                       "showAmounts": true
@@ -227,7 +227,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Долг"
                         }
                       ],
                       "showAmounts": true
@@ -253,7 +253,7 @@
                       "badges": [
                         {
                           "key": "sum",
-                          "label": "Есть остаток"
+                          "label": "Долг"
                         }
                       ],
                       "showAmounts": true
@@ -269,7 +269,7 @@
                   "badges": [
                     {
                       "key": "sum",
-                      "label": "Есть остаток: 8"
+                      "label": "Долг/переплата: 8"
                     }
                   ],
                   "showAmounts": true
@@ -285,7 +285,7 @@
               "badges": [
                 {
                   "key": "sum",
-                  "label": "Есть остаток: 8"
+                  "label": "Долг/переплата: 1"
                 }
               ],
               "showAmounts": true
@@ -301,7 +301,7 @@
           "badges": [
             {
               "key": "sum",
-              "label": "Есть остаток: 8"
+              "label": "Долг/переплата: 1"
             }
           ],
           "showAmounts": true
@@ -319,7 +319,7 @@
       "badges": [
         {
           "key": "sum",
-          "label": "Есть остаток: 8"
+          "label": "Долг/переплата: 8"
         }
       ],
       "showAmounts": true

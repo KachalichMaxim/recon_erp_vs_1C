@@ -50,7 +50,7 @@ systemctl restart elt-vpn.service
 | Реализация всего, `get_realizsum` | `2 415 525,73` |
 | `(+/-) = get_paidsum - get_realizsum` | `-84 414,40` |
 
-По всем 8 поставкам `get_paidsum` совпал с распределениями `veda_acchist_docs.f_clssum`. По всем 8 поставкам есть ненулевой остаток `SETTLEMENT_BALANCE_NONZERO`; это не ошибка SQL, а расчетное сальдо.
+По всем 8 поставкам `get_paidsum` совпал с распределениями `veda_acchist_docs.f_clssum`. По всем 8 поставкам есть ненулевая дельта `SETTLEMENT_BALANCE_NONZERO`; это не ошибка SQL, а расчетный долг или переплата.
 
 ## Что сверяется
 

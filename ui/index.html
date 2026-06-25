@@ -1063,6 +1063,7 @@ const moneyValue = (value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
+const balanceLabel = (delta) => moneyValue(delta) > 0.01 ? 'Переплата' : moneyValue(delta) < -0.01 ? 'Долг' : '';
 const hasText = (value) => String(value || '').trim().length > 0;
 const meaningfulLabel = (value) => {
   const text = String(value || '').trim();
@@ -1153,7 +1154,7 @@ const buildMatrixModel = () => {
     if ((issueCounts['miss-1c'] || 0) > 0) rowBadges.push({ key: 'no1c', label: `Нет в 1С ${issueCounts['miss-1c']}` });
     if ((issueCounts['miss-erp'] || 0) > 0) rowBadges.push({ key: 'noerp', label: `Нет в ERP ${issueCounts['miss-erp']}` });
     if ((issueCounts.sum || 0) > 0) rowBadges.push({ key: 'sum', label: 'Сумма расходится' });
-    else if (Math.abs(delta) > 0.01) rowBadges.push({ key: 'sum', label: 'Есть остаток' });
+    else if (balanceLabel(delta)) rowBadges.push({ key: 'sum', label: balanceLabel(delta) });
     if ((issueCounts.vat || 0) > 0) rowBadges.push({ key: 'nosf', label: 'Вопрос по НДС' });
     if ((issueCounts['no-sf'] || 0) > 0) rowBadges.push({ key: 'no-sf', label: `Нет СФ/УПД ${issueCounts['no-sf']}` });
     if ((issueCounts.fields || 0) > 0) rowBadges.push({ key: 'fields', label: 'Расходятся реквизиты' });
@@ -1541,7 +1542,7 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
     const key = String(badge?.key || '');
     if (key === 'ok' && label.includes('1С:')) return 'Все строки сверки ERP ↔ 1С по этой поставке совпали: найден документ 1С и совпали контролируемые поля.';
     if (key === 'ok') return 'По этой строке не найдено расхождений.';
-    if (key === 'sum' && label.includes('Остаток')) return 'Остаток = сумма оплат - возмещаемые расходы - невозмещаемые расходы.';
+    if (key === 'sum' && (label.includes('Долг') || label.includes('Переплата'))) return 'Долг/переплата = сумма оплат - возмещаемые расходы - невозмещаемые расходы.';
     if (key === 'fields') return 'Расходятся контролируемые поля документа: номер, дата, договор, код 1С или другая связка.';
     if (key === 'no1c') return 'ERP-документ есть, но соответствующий документ 1С не найден в источнике сверки.';
     if (key === 'noerp') return 'Документ 1С есть, но соответствующая ERP-строка не найдена.';
