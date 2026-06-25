@@ -5090,6 +5090,425 @@ def build_erp_snapshot(spec_id: int) -> dict[str, object]:
     }
 
 
+def live_money(value: object) -> float:
+    try:
+        return round(float(value or 0), 2)
+    except Exception:
+        return 0.0
+
+
+def one_line(value: object) -> str:
+    return " ".join(str(value or "").replace("\t", " ").replace("\r", " ").replace("\n", " ").split())
+
+
+def joined_unique_lines(values: list[str]) -> str:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        text = one_line(value)
+        if text and text not in seen:
+            seen.add(text)
+            result.append(text)
+    return "\n".join(result) if result else "—"
+
+
+def matrix_badges(issues: list[str], delta: float) -> list[dict[str, str]]:
+    badges: list[dict[str, str]] = []
+    if "NO_CUSTOMER_INVOICE" in issues:
+        badges.append({"key": "noerp", "label": "Нет счета"})
+    if "NO_CLOSING_DOC" in issues:
+        badges.append({"key": "no1c", "label": "Нет акта"})
+    if "PAYMENT_ROUTINE_VS_DOCS_MISMATCH" in issues:
+        badges.append({"key": "fields", "label": "Оплаты расходятся"})
+    if "UNCLASSIFIED_REALIZATION" in issues:
+        badges.append({"key": "fields", "label": "f_isvozm не 1/2"})
+    if abs(delta) > 0.01:
+        badges.append({"key": "sum", "label": "Остаток"})
+    if not badges:
+        badges.append({"key": "ok", "label": "ОК"})
+    return badges
+
+
+def aggregate_matrix_rows(rows: list[dict[str, object]]) -> dict[str, object]:
+    totals = {
+        "invoiceSum": live_money(sum(live_money(row.get("invoiceSum")) for row in rows)),
+        "paymentSum": live_money(sum(live_money(row.get("paymentSum")) for row in rows)),
+        "reimbursableSum": live_money(sum(live_money(row.get("reimbursableSum")) for row in rows)),
+        "nonReimbursableSum": live_money(sum(live_money(row.get("nonReimbursableSum")) for row in rows)),
+        "delta": live_money(sum(live_money(row.get("delta")) for row in rows)),
+    }
+    issues: list[str] = []
+    for row in rows:
+        badges = row.get("badges", [])
+        for badge in badges if isinstance(badges, list) else []:
+            if isinstance(badge, dict) and badge.get("key") != "ok":
+                issues.append(one_line(badge.get("label")))
+    totals["badges"] = [{"key": "ok", "label": "ОК"}] if not issues else [{"key": "sum", "label": f"Проблем: {len(issues)}"}]
+    totals["showAmounts"] = True
+    return totals
+
+
+def operation_bucket(operation: dict[str, object]) -> str:
+    marker = sql_int(operation.get("reimbursement_id"))
+    if marker == 1:
+        return "reimbursable"
+    if marker == 2:
+        return "non_reimbursable"
+    return "unclassified"
+
+
+def customer_invoice_docs(erp_docs: list[dict[str, object]]) -> list[dict[str, object]]:
+    invoices: list[dict[str, object]] = []
+    seen: set[int] = set()
+    for doc in erp_docs:
+        if doc.get("doc_kind") != "schet":
+            continue
+        if sql_int(doc.get("invoice_id")) != 0:
+            continue
+        if one_line(doc.get("type_name")) != "Счет покупателю":
+            continue
+        doc_id = sql_int(doc.get("erp_doc_id"))
+        if doc_id <= 0 or doc_id in seen:
+            continue
+        seen.add(doc_id)
+        invoices.append(doc)
+    invoices.sort(key=lambda item: (str(item.get("date_iso") or ""), str(item.get("number") or ""), sql_int(item.get("erp_doc_id"))))
+    return invoices
+
+
+def closing_docs(erp_docs: list[dict[str, object]]) -> list[dict[str, object]]:
+    docs: list[dict[str, object]] = []
+    seen: set[tuple[str, str, str, float]] = set()
+    for doc in erp_docs:
+        if doc.get("doc_kind") != "act":
+            continue
+        key = (
+            one_line(doc.get("code1c")),
+            one_line(doc.get("number")),
+            one_line(doc.get("date")),
+            live_money(doc.get("sum")),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        docs.append(doc)
+    docs.sort(key=lambda item: (str(item.get("date_iso") or ""), str(item.get("code1c") or ""), str(item.get("number") or "")))
+    return docs
+
+
+def document_line(doc: dict[str, object]) -> str:
+    number = one_line(doc.get("code1c")) or one_line(doc.get("number"))
+    date = one_line(doc.get("date"))
+    if number and date:
+        return f"{number} от {date}"
+    return number
+
+
+def build_client_specs_query(client_id: int, dog_id: int, limit: int, scope: str) -> str:
+    scope = normalize_text(scope).lower()
+    if scope == "contact":
+        client_filter = f"(cl.f_contactid = {client_id} OR contact.f_id = {client_id})"
+    elif scope == "legal":
+        client_filter = f"cl.f_id = {client_id}"
+    else:
+        client_filter = f"(cl.f_id = {client_id} OR cl.f_contactid = {client_id} OR contact.f_id = {client_id})"
+    dog_filter = f"AND d.f_id = {dog_id}" if dog_id > 0 else ""
+    return f"""
+SELECT
+    s.f_id,
+    COALESCE(s.f_num, '') AS spec_num,
+    COALESCE(vs.spec_num_short, s.f_num, '') AS spec_num_short,
+    COALESCE(vs.spec_type, '') AS spec_type,
+    COALESCE(vs.spec_subtype, '') AS spec_subtype,
+    COALESCE(vs.spec_subtypeid, s.f_subtype, 0) AS spec_subtype_id,
+    COALESCE(DATE_FORMAT(vs.spec_date, '%Y-%m-%d'), DATE_FORMAT(s.f_dt, '%Y-%m-%d'), '') AS spec_date,
+    COALESCE(vs.spec_name, s.f_tovar, '') AS spec_name,
+    COALESCE(d.f_id, 0) AS dog_id,
+    COALESCE(d.f_dogname, '') AS dog_number,
+    COALESCE(d.f_kod1c, '') AS dog_code1c,
+    COALESCE(DATE_FORMAT(d.f_dogdate, '%d.%m.%Y'), '') AS dog_date,
+    COALESCE(cl.f_id, 0) AS legal_id,
+    COALESCE(cl.f_cname, '') AS legal_name,
+    COALESCE(cl.f_abbr, '') AS legal_abbr,
+    COALESCE(cl.f_inn, '') AS legal_inn,
+    COALESCE(contact.f_id, 0) AS contact_id,
+    COALESCE(NULLIF(contact.f_cname, ''), NULLIF(contact.f_name, ''), cl.f_cname, '') AS contact_name,
+    COALESCE(contact.f_inn, '') AS contact_inn
+FROM veda_specs s
+JOIN veda_dogs d
+    ON d.f_id = s.f_dogid
+JOIN veda_clients cl
+    ON cl.f_id = d.f_contrid
+LEFT JOIN veda_contacts contact
+    ON contact.f_id = cl.f_contactid
+LEFT JOIN view_specs vs
+    ON vs.spec_id = s.f_id
+WHERE {client_filter}
+  {dog_filter}
+ORDER BY
+    s.f_dt DESC,
+    s.f_id DESC
+LIMIT {limit};
+"""
+
+
+def fetch_client_specs(client_id: int, dog_id: int, limit: int, scope: str) -> list[dict[str, object]]:
+    specs: list[dict[str, object]] = []
+    for row in run_mysql_tsv(build_client_specs_query(client_id, dog_id, limit, scope)):
+        specs.append(
+            {
+                "spec_id": int_at(row, 0),
+                "spec_num": text_at(row, 1),
+                "spec_num_short": text_at(row, 2),
+                "spec_type": text_at(row, 3),
+                "spec_subtype": text_at(row, 4),
+                "spec_subtype_id": int_at(row, 5, 0),
+                "spec_date": text_at(row, 6),
+                "spec_name": text_at(row, 7),
+                "dog_id": int_at(row, 8, 0),
+                "dog_number": text_at(row, 9),
+                "dog_code1c": text_at(row, 10),
+                "dog_date": text_at(row, 11),
+                "legal_id": int_at(row, 12, 0),
+                "legal_name": text_at(row, 13),
+                "legal_abbr": text_at(row, 14),
+                "legal_inn": text_at(row, 15),
+                "contact_id": int_at(row, 16, 0),
+                "contact_name": text_at(row, 17),
+                "contact_inn": text_at(row, 18),
+            }
+        )
+    return specs
+
+
+def build_client_spec_row(spec: dict[str, object], level: int) -> dict[str, object]:
+    spec_id = sql_int(spec.get("spec_id"))
+    operations = fetch_operations(spec_id)
+    erp_docs = fetch_erp_docs(spec_id)
+    payments = fetch_payments(spec_id)
+    invoices = customer_invoice_docs(erp_docs)
+    acts = closing_docs(erp_docs)
+
+    paid_by_routine = live_money(sum(live_money(op.get("rp_paid_sum")) for op in operations))
+    paid_by_docs = live_money(sum(live_money(pay.get("classified_sum")) for pay in payments if pay.get("direction") == "incoming"))
+    reimbursable = live_money(sum(live_money(op.get("rp_realiz_sum")) for op in operations if operation_bucket(op) == "reimbursable"))
+    non_reimbursable = live_money(sum(live_money(op.get("rp_realiz_sum")) for op in operations if operation_bucket(op) == "non_reimbursable"))
+    unclassified = live_money(sum(live_money(op.get("rp_realiz_sum")) for op in operations if operation_bucket(op) == "unclassified"))
+    realization_total = live_money(reimbursable + non_reimbursable + unclassified)
+    delta = live_money(paid_by_routine - realization_total)
+    invoice_total = live_money(sum(live_money(doc.get("sum")) for doc in invoices))
+
+    issues: list[str] = []
+    if not invoices:
+        issues.append("NO_CUSTOMER_INVOICE")
+    if not acts:
+        issues.append("NO_CLOSING_DOC")
+    if abs(paid_by_routine - paid_by_docs) > 0.01:
+        issues.append("PAYMENT_ROUTINE_VS_DOCS_MISMATCH")
+    if abs(delta) > 0.01:
+        issues.append("SETTLEMENT_BALANCE_NONZERO")
+    if abs(unclassified) > 0.01:
+        issues.append("UNCLASSIFIED_REALIZATION")
+
+    spec_type = one_line(spec.get("spec_type")) or "Поставка"
+    spec_num = one_line(spec.get("spec_num")) or str(spec_id)
+    spec_note_bits = [one_line(spec.get("spec_date")), f"spec_id {spec_id}"]
+    if spec.get("spec_name"):
+        spec_note_bits.insert(1, one_line(spec.get("spec_name")))
+
+    return {
+        "id": f"spec-{spec_id}",
+        "kind": "spec",
+        "level": level,
+        "name": f"{spec_type} №{spec_num}",
+        "note": " · ".join([item for item in spec_note_bits if item]),
+        "specNo": one_line(spec.get("spec_num_short")) or spec_num,
+        "isParent": False,
+        "defaultExpanded": False,
+        "children": [],
+        "invoiceLabel": joined_unique_lines([one_line(doc.get("number")) or one_line(doc.get("code1c")) for doc in invoices]),
+        "invoiceSum": invoice_total,
+        "paymentSum": paid_by_routine,
+        "reimbursableSum": reimbursable,
+        "nonReimbursableSum": non_reimbursable,
+        "sfLabel": joined_unique_lines([document_line(doc) for doc in acts]),
+        "delta": delta,
+        "badges": matrix_badges(issues, delta),
+        "showAmounts": True,
+        "meta": {
+            "spec_id": spec_id,
+            "paid_total_acchist_docs": paid_by_docs,
+            "realization_total_get_realizsum": realization_total,
+            "unclassified_realization_get_realizsum": unclassified,
+            "operations_count": len(operations),
+            "customer_invoice_count": len(invoices),
+            "closing_docs_count": len(acts),
+            "payments_count": len(payments),
+            "issues": issues,
+        },
+    }
+
+
+def build_client_matrix_snapshot(client_id: int, dog_id: int = 0, limit: int = 25, scope: str = "auto") -> dict[str, object]:
+    try:
+        limit = int(limit)
+    except Exception:
+        limit = 25
+    limit = min(max(limit, 1), 100)
+    specs = fetch_client_specs(client_id, dog_id, limit, scope)
+    if not specs:
+        return {
+            "ok": True,
+            "source": "live_client_mariadb",
+            "sourceState": "loaded",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "parameters": {"client_id": client_id, "dog_id": dog_id, "limit": limit, "scope": scope},
+            "delivery": {
+                "request_label": f"client_id {client_id}",
+                "client_name": f"client_id {client_id}",
+                "client_inn": "",
+                "spec_id": 0,
+            },
+            "matrix_model": {
+                "clients": [],
+                "totals": {"invoiceSum": 0, "paymentSum": 0, "reimbursableSum": 0, "nonReimbursableSum": 0, "delta": 0},
+                "rowsCount": 0,
+                "sourceLabel": f"Live MariaDB ERP · client_id {client_id} · нет поставок",
+            },
+        }
+
+    contact_groups: dict[int, dict[str, object]] = {}
+    for spec in specs:
+        contact_id = sql_int(spec.get("contact_id")) or sql_int(spec.get("legal_id"))
+        legal_id = sql_int(spec.get("legal_id"))
+        dog_key = sql_int(spec.get("dog_id"))
+        contact = contact_groups.setdefault(
+            contact_id,
+            {
+                "id": contact_id,
+                "name": one_line(spec.get("contact_name")) or one_line(spec.get("legal_name")) or f"client_id {client_id}",
+                "inn": one_line(spec.get("contact_inn")),
+                "legals": {},
+            },
+        )
+        legals = contact["legals"] if isinstance(contact.get("legals"), dict) else {}
+        legal = legals.setdefault(
+            legal_id,
+            {
+                "id": legal_id,
+                "name": one_line(spec.get("legal_abbr")) or one_line(spec.get("legal_name")) or f"ЮЛ {legal_id}",
+                "inn": one_line(spec.get("legal_inn")),
+                "dogs": {},
+            },
+        )
+        dogs = legal["dogs"] if isinstance(legal.get("dogs"), dict) else {}
+        dog = dogs.setdefault(
+            dog_key,
+            {
+                "id": dog_key,
+                "number": one_line(spec.get("dog_number")) or f"dog_id {dog_key}",
+                "code1c": one_line(spec.get("dog_code1c")),
+                "date": one_line(spec.get("dog_date")),
+                "specs": [],
+            },
+        )
+        dog_specs = dog["specs"] if isinstance(dog.get("specs"), list) else []
+        dog_specs.append(spec)
+
+    clients: list[dict[str, object]] = []
+    all_spec_rows: list[dict[str, object]] = []
+    for contact in contact_groups.values():
+        legal_rows: list[dict[str, object]] = []
+        legals = contact.get("legals") if isinstance(contact.get("legals"), dict) else {}
+        for legal in legals.values():
+            dog_rows: list[dict[str, object]] = []
+            dogs = legal.get("dogs") if isinstance(legal.get("dogs"), dict) else {}
+            for dog in dogs.values():
+                spec_rows = [
+                    build_client_spec_row(spec, 3)
+                    for spec in (dog.get("specs") if isinstance(dog.get("specs"), list) else [])
+                ]
+                all_spec_rows.extend(spec_rows)
+                dog_totals = aggregate_matrix_rows(spec_rows)
+                dog_rows.append(
+                    {
+                        "id": f"dog-{legal.get('id')}-{dog.get('id')}",
+                        "kind": "contract",
+                        "level": 2,
+                        "name": f"Договор {dog.get('number')}",
+                        "note": " · ".join([item for item in [f"dog_id {dog.get('id')}", f"код 1С {dog.get('code1c')}" if dog.get("code1c") else "", one_line(dog.get("date"))] if item]),
+                        "specNo": f"{len(spec_rows)} поставок",
+                        "isParent": True,
+                        "defaultExpanded": True,
+                        "children": spec_rows,
+                        **dog_totals,
+                    }
+                )
+            legal_totals = aggregate_matrix_rows(dog_rows)
+            legal_rows.append(
+                {
+                    "id": f"legal-{legal.get('id')}",
+                    "kind": "legal",
+                    "level": 1,
+                    "name": f"ЮЛ: {legal.get('name')}",
+                    "note": " · ".join([item for item in [f"client_id {legal.get('id')}", f"ИНН {legal.get('inn')}" if legal.get("inn") else ""] if item]),
+                    "specNo": f"{len(dog_rows)} договоров",
+                    "isParent": True,
+                    "defaultExpanded": True,
+                    "children": dog_rows,
+                    **legal_totals,
+                }
+            )
+        client_totals = aggregate_matrix_rows(legal_rows)
+        root = {
+            "id": f"client-{contact.get('id')}",
+            "kind": "client",
+            "level": 0,
+            "name": f"Клиент: {contact.get('name')}",
+            "note": " · ".join([item for item in [f"contact_id {contact.get('id')}", f"ИНН {contact.get('inn')}" if contact.get("inn") else ""] if item]),
+            "specNo": f"{len(legal_rows)} ЮЛ",
+            "isParent": True,
+            "defaultExpanded": True,
+            "children": legal_rows,
+            **client_totals,
+        }
+        clients.append({"id": root["id"], "name": contact.get("name"), "inn": contact.get("inn"), "root": root})
+
+    matrix_totals = aggregate_matrix_rows(all_spec_rows)
+    first_spec = specs[0]
+    return {
+        "ok": True,
+        "source": "live_client_mariadb",
+        "sourceState": "loaded",
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "parameters": {"client_id": client_id, "dog_id": dog_id, "limit": limit, "scope": scope},
+        "delivery": {
+            "request_label": f"Матрица client_id {client_id}",
+            "spec_id": 0,
+            "client_id": sql_int(first_spec.get("legal_id")),
+            "client_name": one_line(first_spec.get("contact_name")) or one_line(first_spec.get("legal_name")),
+            "client_inn": one_line(first_spec.get("contact_inn")) or one_line(first_spec.get("legal_inn")),
+            "main_dog_id": dog_id or sql_int(first_spec.get("dog_id")),
+            "main_dog_number": one_line(first_spec.get("dog_number")),
+            "main_dog_code1c": one_line(first_spec.get("dog_code1c")),
+        },
+        "matrix_model": {
+            "clients": clients,
+            "totals": matrix_totals,
+            "rowsCount": len(all_spec_rows),
+            "sourceLabel": f"Live MariaDB ERP · client_id {client_id} · {len(all_spec_rows)} поставок · limit {limit}",
+        },
+        "summary": {
+            "specs": len(all_spec_rows),
+            "invoice_total": matrix_totals.get("invoiceSum", 0),
+            "paid_total_get_paidsum": matrix_totals.get("paymentSum", 0),
+            "reimbursable_get_realizsum": matrix_totals.get("reimbursableSum", 0),
+            "non_reimbursable_get_realizsum": matrix_totals.get("nonReimbursableSum", 0),
+            "delta_paid_minus_realization": matrix_totals.get("delta", 0),
+        },
+    }
+
+
 def xlsx_safe(value: object) -> object:
     if value is None:
         return ""
@@ -5383,6 +5802,9 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/reconciliation/erp-snapshot":
             self.handle_erp_snapshot(parsed.query)
             return
+        if parsed.path == "/api/reconciliation/client-matrix":
+            self.handle_client_matrix(parsed.query)
+            return
         if parsed.path == "/api/reconciliation/erp-export.xlsx":
             self.handle_erp_export_xlsx(parsed.query)
             return
@@ -5456,6 +5878,23 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
         except Exception:
             return None
 
+    def parse_positive_int(self, params: dict[str, list[str]], keys: list[str], default: int | None = None) -> int | None:
+        raw = None
+        for key in keys:
+            values = params.get(key)
+            if values:
+                raw = values[0]
+                break
+        if raw is None:
+            return default
+        try:
+            value = int(str(raw))
+            if value <= 0:
+                raise ValueError("value must be positive")
+            return value
+        except Exception:
+            return default
+
     def handle_erp_snapshot(self, query_str: str):
         spec_id = self.parse_spec_id_from_query(query_str)
         if not spec_id:
@@ -5464,6 +5903,26 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
 
         try:
             snapshot = build_erp_snapshot(spec_id)
+        except Exception as exc:
+            self.write_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
+            return
+
+        self.write_json(HTTPStatus.OK, snapshot)
+
+    def handle_client_matrix(self, query_str: str):
+        params = parse_qs(query_str)
+        client_id = self.parse_positive_int(params, ["client_id", "clientId", "legal_id", "contact_id"])
+        if not client_id:
+            self.write_json(HTTPStatus.BAD_REQUEST, {"ok": False, "error": "client_id is required and must be positive integer"})
+            return
+        dog_id = self.parse_positive_int(params, ["dog_id", "dogId"], 0) or 0
+        limit = self.parse_positive_int(params, ["limit"], 25) or 25
+        scope = normalize_text((params.get("scope") or [params.get("client_scope", ["auto"])[0]])[0]).lower() or "auto"
+        if scope not in {"auto", "legal", "contact"}:
+            scope = "auto"
+
+        try:
+            snapshot = build_client_matrix_snapshot(client_id=client_id, dog_id=dog_id, limit=limit, scope=scope)
         except Exception as exc:
             self.write_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "error": str(exc)})
             return

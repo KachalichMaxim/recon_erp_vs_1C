@@ -770,6 +770,10 @@ window.ERP_SNAPSHOT = {
 const params = new URLSearchParams(window.location.search);
 const getApiBase = () => (params.get('api') || '').replace(/\/$/, '');
 const getSpecId = () => params.get('spec_id') || params.get('specId') || params.get('id') || '';
+const getClientId = () => params.get('client_id') || params.get('clientId') || params.get('legal_id') || params.get('contact_id') || '';
+const getDogId = () => params.get('dog_id') || params.get('dogId') || '';
+const getMatrixLimit = () => params.get('limit') || '25';
+const getClientScope = () => params.get('scope') || params.get('client_scope') || 'auto';
 const getFixtureName = () => params.get('fixture') || params.get('reference') || '';
 const apiUrl = (path) => `${getApiBase()}${path}`;
 const getOneCTemplateUrl = () => apiUrl('/akt_sverki/templates/1c_reconciliation_upload_template.xlsx');
@@ -777,8 +781,9 @@ window.RECONCILIATION_REPORT = null;
 
 const normalizeDeliveryFromSnapshot = (snapshot) => {
   const d = snapshot.delivery || {};
+  const snapshotClientId = d.client_id || snapshot.parameters?.client_id || '';
   return {
-    id: d.spec_id ? `SPEC-${d.spec_id}` : window.DELIVERY.id,
+    id: d.spec_id ? `SPEC-${d.spec_id}` : (snapshotClientId ? `CLIENT-${snapshotClientId}` : window.DELIVERY.id),
     number: d.request_label || (d.spec_number ? `Заявка № ${d.spec_number}` : window.DELIVERY.number),
     date: d.spec_date || window.DELIVERY.date,
     principal: d.org_name || window.DELIVERY.principal,
@@ -791,7 +796,7 @@ const normalizeDeliveryFromSnapshot = (snapshot) => {
     currency: d.goods_currency || window.DELIVERY.currency,
     totalAmount: d.goods_amount || 0,
     manager: d.manager_name || window.DELIVERY.manager,
-    status: `spec_id ${d.spec_id || snapshot.spec_id}`,
+    status: d.spec_id || snapshot.spec_id ? `spec_id ${d.spec_id || snapshot.spec_id}` : `client_id ${snapshotClientId}`,
   };
 };
 
@@ -887,8 +892,24 @@ const loadErpSnapshot = async () => {
     return { state: 'loaded', message: `Загружен контрольный набор ERP ${fixture}` };
   }
 
+  const clientId = getClientId();
+  if (clientId) {
+    const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope() });
+    const dogId = getDogId();
+    if (dogId) query.set('dog_id', dogId);
+    const resp = await fetch(apiUrl(`/api/reconciliation/client-matrix?${query.toString()}`));
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(text || `HTTP ${resp.status}`);
+    }
+    const payload = await resp.json();
+    if (!payload.ok) throw new Error(payload.error || 'ERP client matrix failed');
+    applyErpSnapshot(payload);
+    return { state: 'loaded', message: `ERP-матрица загружена по client_id ${clientId}` };
+  }
+
   const specId = getSpecId();
-  if (!specId) return { state: 'mock', message: 'Откройте страницу с ?spec_id=<ID заявки>, чтобы подтянуть ERP-данные.' };
+  if (!specId) return { state: 'mock', message: 'Откройте страницу с ?client_id=<ID клиента> или ?spec_id=<ID заявки>, чтобы подтянуть ERP-данные.' };
   const resp = await fetch(apiUrl(`/api/reconciliation/erp-snapshot?spec_id=${encodeURIComponent(specId)}`));
   if (!resp.ok) {
     const text = await resp.text();
@@ -2780,7 +2801,7 @@ const screenFromLocation = () => {
   const params = new URLSearchParams(window.location.search);
   const requested = (params.get('screen') || params.get('view') || window.location.hash.replace(/^#/, '') || '').toLowerCase();
   if (['delivery', 'matrix'].includes(requested)) return requested;
-  if (params.has('spec_id')) return 'matrix';
+  if (params.has('spec_id') || params.has('specId') || params.has('client_id') || params.has('clientId') || params.has('legal_id') || params.has('contact_id') || params.has('fixture') || params.has('reference')) return 'matrix';
   return '';
 };
 
@@ -2822,7 +2843,7 @@ const App = () => {
         if (!alive) return;
         console.warn('ERP snapshot failed', err);
         window.ERP_SNAPSHOT = { ...window.ERP_SNAPSHOT, sourceState: 'error' };
-        setDataState({ state: 'error', message: 'ERP API недоступен: не удалось получить данные по spec_id. Показан локальный пример.' });
+        setDataState({ state: 'error', message: 'ERP API недоступен: не удалось получить данные по URL-параметрам. Показан локальный пример.' });
       });
     return () => { alive = false; };
   }, []);
