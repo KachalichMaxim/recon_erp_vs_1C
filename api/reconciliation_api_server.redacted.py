@@ -51,11 +51,11 @@ except Exception:
     build_google_service = None
 
 
-DB_HOST = os.environ.get("PRINT_DB_HOST", "erp.vedagent")
+DB_HOST = os.environ.get("PRINT_DB_HOST", "<mariadb-host>")
 DB_PORT = int(os.environ.get("PRINT_DB_PORT", "3306"))
-DB_NAME = os.environ.get("PRINT_DB_NAME", "veda25")
-DB_USER = os.environ.get("PRINT_DB_USER", "data")
-DB_PASSWORD = os.environ.get("PRINT_DB_PASSWORD", "<ERP_DB_PASSWORD>")
+DB_NAME = os.environ.get("PRINT_DB_NAME", "<mariadb-db>")
+DB_USER = os.environ.get("PRINT_DB_USER", "<mariadb-user>")
+DB_PASSWORD = os.environ.get("PRINT_DB_PASSWORD", "")
 
 LISTEN_HOST = os.environ.get("RECON_API_HOST", "0.0.0.0")
 LISTEN_PORT = int(os.environ.get("RECON_API_PORT", "8780"))
@@ -64,9 +64,9 @@ OPER_URL_TEMPLATE = os.environ.get("RECON_OPERATION_URL_TEMPLATE", "<ERP_OPERATI
 ONEC_DEFAULT_DIR = Path(os.environ.get("RECON_ONEC_DIR", str(STATIC_ROOT / "akt_sverki" / "1C")))
 ONEC_DRIVE_FOLDER_ID = os.environ.get(
     "RECON_ONEC_DRIVE_FOLDER_ID",
-    os.environ.get("RECON_GOOGLE_DRIVE_FOLDER_ID", "1iTmAkt2Bs8Oi1Wco-6bJnd-yAbxW_cNt"),
+    os.environ.get("RECON_GOOGLE_DRIVE_FOLDER_ID", "<optional-drive-folder-id>"),
 )
-CONTROL_SHEET_ID = os.environ.get("RECON_CONTROL_SHEET_ID", "1v50v2vM8Yqf7TeGQ4oY3tRZEvsDHs0lGW8_q0oQqfSE")
+CONTROL_SHEET_ID = os.environ.get("RECON_CONTROL_SHEET_ID", "")
 CONTROL_SHEET_GID = os.environ.get("RECON_CONTROL_SHEET_GID", "92475489")
 GOOGLE_CREDENTIALS_FILE = Path(
     os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", str(STATIC_ROOT / "secrets" / "google-drive-service-account.json"))
@@ -4771,7 +4771,7 @@ def fetch_client_tree(delivery: dict[str, object]) -> dict[str, object]:
         f"""
 SELECT
     COALESCE(cl.f_contactid, 0) AS contact_id,
-    COALESCE(NULLIF(contact.f_cname, ''), NULLIF(contact.f_name, ''), cl.f_cname, '') AS contact_name,
+    COALESCE(NULLIF(NULLIF(contact.f_cname, ''), '_'), NULLIF(NULLIF(contact.f_name, ''), '_'), cl.f_cname, '') AS contact_name,
     COALESCE(contact.f_inn, '') AS contact_inn,
     COALESCE(cl.f_id, 0) AS legal_entity_id,
     COALESCE(cl.f_cname, '') AS legal_entity_name,
@@ -5280,13 +5280,13 @@ def joined_unique_lines(values: list[str]) -> str:
 def matrix_badges(issues: list[str], delta: float) -> list[dict[str, str]]:
     badges: list[dict[str, str]] = []
     if "NO_CUSTOMER_INVOICE" in issues:
-        badges.append({"key": "noerp", "label": "Нет счета"})
+        badges.append({"key": "noerp", "label": "Нет счета покупателю"})
     if "NO_CLOSING_DOC" in issues:
-        badges.append({"key": "no1c", "label": "Нет акта"})
+        badges.append({"key": "no1c", "label": "Нет закрывающего документа"})
     if "PAYMENT_ROUTINE_VS_DOCS_MISMATCH" in issues:
         badges.append({"key": "fields", "label": "Оплаты расходятся"})
     if "UNCLASSIFIED_REALIZATION" in issues:
-        badges.append({"key": "fields", "label": "f_isvozm не 1/2"})
+        badges.append({"key": "fields", "label": "Не определена возмещаемость"})
     if abs(delta) > 0.01:
         badges.append({"key": "sum", "label": "Остаток"})
     if not badges:
@@ -5302,13 +5302,24 @@ def aggregate_matrix_rows(rows: list[dict[str, object]]) -> dict[str, object]:
         "nonReimbursableSum": live_money(sum(live_money(row.get("nonReimbursableSum")) for row in rows)),
         "delta": live_money(sum(live_money(row.get("delta")) for row in rows)),
     }
-    issues: list[str] = []
+    issues: list[dict[str, str]] = []
     for row in rows:
-        badges = row.get("badges", [])
-        for badge in badges if isinstance(badges, list) else []:
+        for badge in row.get("badges", []) if isinstance(row.get("badges"), list) else []:
             if isinstance(badge, dict) and badge.get("key") != "ok":
-                issues.append(one_line(badge.get("label")))
-    totals["badges"] = [{"key": "ok", "label": "ОК"}] if not issues else [{"key": "sum", "label": f"Проблем: {len(issues)}"}]
+                label = one_line(badge.get("label")) or "Отклонение"
+                label = re.sub(r"(?::\s*\d+)+$", "", label).strip()
+                issues.append({"key": one_line(badge.get("key")) or "sum", "label": label or "Отклонение"})
+    if not issues:
+        totals["badges"] = [{"key": "ok", "label": "ОК"}]
+    else:
+        grouped: dict[tuple[str, str], int] = {}
+        for issue in issues:
+            grouped[(issue["key"], issue["label"])] = grouped.get((issue["key"], issue["label"]), 0) + 1
+        if len(grouped) == 1:
+            (key, label), count = next(iter(grouped.items()))
+            totals["badges"] = [{"key": key, "label": f"{label}: {count}"}]
+        else:
+            totals["badges"] = [{"key": "sum", "label": f"Отклонений: {len(issues)}"}]
     totals["showAmounts"] = True
     return totals
 
@@ -5492,7 +5503,7 @@ def compare_status_badge(row: dict[str, object]) -> dict[str, str]:
     status = normalize_text(row.get("status"))
     mismatch_fields = row.get("mismatch_fields") if isinstance(row.get("mismatch_fields"), list) else []
     if status == STATUS_MATCH:
-        return {"key": "ok", "label": "ОК"}
+        return {"key": "ok", "label": "Совпало"}
     if status == STATUS_NOT_FOUND_IN_1C:
         return {"key": "no1c", "label": "Нет в 1С"}
     if status == STATUS_NOT_FOUND_IN_ERP:
@@ -5502,7 +5513,13 @@ def compare_status_badge(row: dict[str, object]) -> dict[str, str]:
             return {"key": "sum", "label": "Сумма расходится"}
         if "vat" in mismatch_fields or "nds" in mismatch_fields or "vat_rate" in mismatch_fields:
             return {"key": "nosf", "label": "Вопрос по НДС"}
-        return {"key": "fields", "label": "Реквизиты расходятся"}
+        if "contract" in mismatch_fields or "dog" in mismatch_fields or "dog_code1c" in mismatch_fields:
+            return {"key": "fields", "label": "Договор расходится"}
+        if "date" in mismatch_fields or "doc_date" in mismatch_fields:
+            return {"key": "fields", "label": "Дата расходится"}
+        if "invoice_number" in mismatch_fields or "number" in mismatch_fields or "code1c" in mismatch_fields:
+            return {"key": "fields", "label": "Номер расходится"}
+        return {"key": "fields", "label": "Поля документа расходятся"}
     if status == STATUS_NOT_COMPARABLE:
         return {"key": "nokey", "label": "Нет ключа 1С"}
     return {"key": "pending", "label": "Не сверено"}
@@ -5522,7 +5539,7 @@ def compare_matrix_badges(report: dict[str, object] | None, delta: float, fallba
     match_count = sql_int(summary.get(STATUS_MATCH))
     has_compare_problem = bool(not_found_1c or not_found_erp or mismatch_total or not_comparable)
     if total and not has_compare_problem:
-        badges.append({"key": "ok", "label": f"1С ОК {match_count}/{total}"})
+        badges.append({"key": "ok", "label": f"1С: {match_count}/{total} совпало"})
     if not_found_1c:
         badges.append({"key": "no1c", "label": f"Нет в 1С {not_found_1c}"})
     if not_found_erp:
@@ -5531,7 +5548,7 @@ def compare_matrix_badges(report: dict[str, object] | None, delta: float, fallba
         badges.append({"key": "sum", "label": f"Сумма расходится {mismatch_sum}"})
     other_mismatch = max(mismatch_total - mismatch_sum, 0)
     if other_mismatch:
-        badges.append({"key": "fields", "label": f"Реквизиты {other_mismatch}"})
+        badges.append({"key": "fields", "label": f"Поля расходятся {other_mismatch}"})
     if not_comparable:
         badges.append({"key": "nokey", "label": f"Нет ключа 1С {not_comparable}"})
     if abs(delta) > 0.01:
@@ -5599,7 +5616,7 @@ SELECT
     COALESCE(cl.f_abbr, '') AS legal_abbr,
     COALESCE(cl.f_inn, '') AS legal_inn,
     COALESCE(contact.f_id, 0) AS contact_id,
-    COALESCE(NULLIF(NULLIF(contact.f_cname, ''), '_'), NULLIF(NULLIF(contact.f_name, ''), '_'), cl.f_cname, '') AS contact_name,
+    COALESCE(NULLIF(contact.f_cname, ''), NULLIF(contact.f_name, ''), cl.f_cname, '') AS contact_name,
     COALESCE(contact.f_inn, '') AS contact_inn
 FROM veda_specs s
 JOIN veda_dogs d

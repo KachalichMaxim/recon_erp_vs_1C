@@ -1108,7 +1108,7 @@ const reimbursementKind = (doc) => {
   return '';
 };
 const docStatusBadge = (status) => {
-  if (status === 'match') return { key: 'ok', label: 'ОК' };
+  if (status === 'match') return { key: 'ok', label: 'Совпало' };
   if (status === 'limited') return { key: 'limit', label: 'Строка 1С' };
   if (status === 'source-error') return { key: 'source-error', label: 'Ошибка 1С' };
   if (status === 'miss-1c') return { key: 'no1c', label: 'Нет в 1С' };
@@ -1116,7 +1116,7 @@ const docStatusBadge = (status) => {
   if (status === 'sum') return { key: 'sum', label: 'Сумма расходится' };
   if (status === 'vat') return { key: 'nosf', label: 'Вопрос по НДС' };
   if (status === 'no-sf') return { key: 'no-sf', label: 'Нет СФ/УПД' };
-  if (status === 'fields') return { key: 'fields', label: 'Расходятся реквизиты' };
+  if (status === 'fields') return { key: 'fields', label: 'Поля документа расходятся' };
   if (status === 'no-kod1c') return { key: 'nokey', label: 'Нет ключа 1С' };
   return { key: 'pending', label: 'Не сверено' };
 };
@@ -1533,9 +1533,22 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
   const renderMoney = (row, key) => <span className="mono">{rowMoneyText(row, key)}</span>;
   const renderBadges = (badges) => (
     <div className="matrix-badges">
-      {(badges || []).map((b, idx) => <span className={`matrix-badge ${b.key}`} key={`${b.key}-${idx}`}>{b.label}</span>)}
+      {(badges || []).map((b, idx) => <span className={`matrix-badge ${b.key}`} title={badgeHint(b)} key={`${b.key}-${idx}`}>{b.label}</span>)}
     </div>
   );
+  const badgeHint = (badge) => {
+    const label = String(badge?.label || '');
+    const key = String(badge?.key || '');
+    if (key === 'ok' && label.includes('1С:')) return 'Все строки сверки ERP ↔ 1С по этой поставке совпали: найден документ 1С и совпали контролируемые поля.';
+    if (key === 'ok') return 'По этой строке не найдено расхождений.';
+    if (key === 'sum' && label.includes('Остаток')) return 'Остаток = сумма оплат - возмещаемые расходы - невозмещаемые расходы.';
+    if (key === 'fields') return 'Расходятся контролируемые поля документа: номер, дата, договор, код 1С или другая связка.';
+    if (key === 'no1c') return 'ERP-документ есть, но соответствующий документ 1С не найден в источнике сверки.';
+    if (key === 'noerp') return 'Документ 1С есть, но соответствующая ERP-строка не найдена.';
+    if (key === 'nosf' || key === 'no-sf') return 'Проверить закрывающий документ или ставку НДС.';
+    if (key === 'nokey') return 'Для автоматической сверки не хватает кода/ключа 1С.';
+    return label;
+  };
   const reconciliationStatusText = (row) => {
     const summary = row.reconciliation?.summary || {};
     const total = Number(summary.total || 0);
@@ -1547,8 +1560,8 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
       Number(summary.FIELDS_MISMATCH || 0) +
       Number(summary.NOT_COMPARABLE || 0);
     return problems
-      ? `Статус проверки: 1С ОК ${match}/${total}, проблем ${problems}`
-      : `Статус проверки: 1С ОК ${match}/${total}`;
+      ? `Сверка с 1С: ${match} из ${total} совпало, отклонений ${problems}`
+      : `Сверка с 1С: ${match} из ${total} совпало`;
   };
   const deltaClass = (value) => moneyValue(value) > 0.01 ? 'pos' : moneyValue(value) < -0.01 ? 'neg' : '';
   const matrixColumns = [
@@ -1633,7 +1646,7 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
         <div className="matrix-actions">
           <button className="btn sm" onClick={onOpenReport}><IconDoc size={13}/>{lastReport ? 'Отчет сверки' : 'Сверить с 1С'}</button>
           <button className="btn sm" onClick={handleCopy}><IconCopy size={13}/>{copyState || 'Скопировать'}</button>
-          <button className="btn brand" onClick={handleExport}><IconDownload size={14}/>Выгрузить</button>
+          <button className="btn brand" onClick={handleExport} title="Скачать бухгалтерскую форму .xlsx"><IconDownload size={14}/>Выгрузить XLSX</button>
         </div>
       </div>
 
@@ -1643,7 +1656,7 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
         </select>
         <div className="matrix-search">
           <IconSearch size={14}/>
-          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск по клиенту, договору, спецификации, счету..." />
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск по ЮЛ, ИНН, client_id, договору, заявке, счету, № 1С..." />
         </div>
         <div className="seg">
           <button className={!onlyIssues ? 'on' : ''} onClick={() => setOnlyIssues(false)}>Все</button>
@@ -1663,16 +1676,16 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
         <div className="matrix-scroll">
           <table className="matrix-table">
             <colgroup>
-              <col style={{ width: '21%' }}/>
-              <col style={{ width: '5.8%' }}/>
+              <col style={{ width: '20%' }}/>
+              <col style={{ width: '5.5%' }}/>
+              <col style={{ width: '9%' }}/>
+              <col style={{ width: '9%' }}/>
+              <col style={{ width: '9.5%' }}/>
               <col style={{ width: '10%' }}/>
-              <col style={{ width: '9.2%' }}/>
-              <col style={{ width: '9.7%' }}/>
-              <col style={{ width: '10.2%' }}/>
-              <col style={{ width: '10.7%' }}/>
-              <col style={{ width: '11%' }}/>
-              <col style={{ width: '6.6%' }}/>
-              <col style={{ width: '5.8%' }}/>
+              <col style={{ width: '10.5%' }}/>
+              <col style={{ width: '10%' }}/>
+              <col style={{ width: '7%' }}/>
+              <col style={{ width: '9.5%' }}/>
             </colgroup>
             <thead>
               <tr>
