@@ -4,28 +4,85 @@
 
 ## Основные артефакты
 
-- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.docx` - итоговое ТЗ.
-- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.pdf` - PDF-рендер ТЗ для быстрого просмотра.
-- `exports/AERO_TRADE_660-1_reference_style_export.xlsx` - пример Excel-выгрузки в бухгалтерском формате.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.docx` - актуальное итоговое ТЗ с live MariaDB-версией и разделом 5.5.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.pdf` - PDF-рендер актуального ТЗ для быстрого просмотра.
+- `docs/TZ_ERP_1C_DEVELOPER_MATRIX_ALGORITHM.md` - читаемый в GitHub алгоритм сборки матрицы и XLSX: SQL, формулы, раскладка колонок.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.docx` - тот же итоговый DOCX без суффикса версии.
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix.pdf` - тот же PDF без суффикса версии.
+- `exports/AERO_TRADE_660-1_live_mariadb_reconciliation_20260624.xlsx` - live-выгрузка по договору 660/1, собранная SQL-запросами с сервера к MariaDB.
+- `reference/aero_trade_660_1_live_mariadb_report_20260624.json` - машинный протокол live-прогона: операции, счета, оплаты, закрывающие документы и суммы `get_*`.
 - `screenshots/docx/` - постраничный PNG-рендер ТЗ.
 - `screenshots/excel/` - PNG-рендер листов Excel.
 - `screenshots/ui/` - иллюстрации целевого интерфейса матрицы и экрана ошибок.
 
+## Финальное ТЗ и проверочные материалы
+
+Финальный документ для передачи PHP-разработчику:
+
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.docx`;
+- `docs/TZ_ERP_1C_Akt_Sverki_Matrix_LIVE_MARIADB_2026-06-24.pdf`;
+- `docs/TZ_ERP_1C_DEVELOPER_MATRIX_ALGORITHM.md`.
+
+Документ описывает производственную доработку встроенного ERP-интерфейса, а не отдельный сервис: PHP ERP, MariaDB и существующий PHP/SOAP-слой 1С.
+Раздел `5.5 Сквозной алгоритм для PHP-разработчика` в DOCX/PDF описывает, какие данные выбирать, как агрегировать блок поставки и как заполнять каждую колонку XLSX.
+
+Проверочные материалы, на которых основано ТЗ:
+
+- `docs/REQUIREMENTS_VALIDATION_BEFORE_TZ.md` — подтвержденные правила, требования к матрице, статусам, XLSX и перечень решений, которые должны войти в финальное ТЗ;
+- `docs/VALIDATION_PROTOCOL_ERP_1C.md` — протокол проверки связей, формул и SOAP-ответов на контрольных поставках.
+- `docs/AUTOMATED_MATRIX_LIVE_TESTS.md` — автоматические тесты live-логики интерфейса, которые запускаются без нового подключения к MariaDB и 1С.
+- `docs/FRESH_AERO_TRADE_660_1_MARIADB_VALIDATION.md` — live-аудит контрольного набора договора 660/1: серверный запуск, SQL-связи, суммы `get_paidsum/get_realizsum`, остатки и артефакты проверки.
+
+Промышленный контур первой версии: PHP ERP + MariaDB + существующий PHP/SOAP-слой 1С. Внешние аналитические файлы не являются компонентами промышленной реализации и не используются как источник данных для текущего пакета.
+
+Зафиксированные правила:
+
+- `veda_spec_invoices.f_isvozm = 1` — возмещаемые расходы;
+- `veda_spec_invoices.f_isvozm = 2` — невозмещаемые операции; в клиентскую колонку попадают прямые клиентские акты, а подрядные распределенные строки логируются отдельно;
+- `veda_schets.f_type = 1` — счет покупателю;
+- `veda_schets.f_type = 2` — счет от поставщика;
+- объединенные ячейки XLSX сохраняются как требование бухгалтерии, а копирование формирует плоский TSV с повторением значений.
+
+## Автоматические тесты
+
+```bash
+npm test
+```
+
+Тесты проверяют логику матрицы на синтетическом контрольном кейсе и на сохраненном live-аудите свежего договора 660/1: `f_isvozm`, источник суммы акта, `f_type`, `f_clssum`, агрегирующие счета, `f_parenttype=4`, СФ/УПД, НДС, смешанные валюты, TSV-копирование и XLSX-раскладку. Они не заменяют проверку на живой MariaDB и 1С, но фиксируют правила, которые должен сохранять PHP-интерфейс.
+
+## Live-матрица по клиенту
+
+После деплоя обновленного API и `ui/index.html` матрица открывается не только по одной поставке, но и по клиенту:
+
+```text
+/akt_sverki/index.html?client_id=221&dog_id=88&limit=8&scope=legal
+```
+
+API-источник:
+
+```text
+/api/reconciliation/client-matrix?client_id=221&dog_id=88&limit=8&scope=legal
+```
+
+`client_id` принимает `veda_clients.f_id`; для группы ЮЛ можно использовать `scope=contact` и передавать `veda_contacts.f_id`. `dog_id` ограничивает выборку договором, `limit` ограничивает количество поставок, чтобы тяжелые ERP-процедуры `get_paidsum/get_realizsum` не запускались сразу по всему клиенту.
+
 ## Исходники для трассировки
 
-- `tools/build_reconciliation_tz_docx.py` - генератор DOCX и иллюстраций.
-- `tools/build_aero_trade_reference_export.mjs` - генератор XLSX-выгрузки.
+- `tools/build_final_developer_tz_docx.py` - актуальный генератор финального DOCX.
+- `tools/server_mariadb_reconciliation_report.py` - серверный скрипт live-проверки MariaDB и сборки JSON/CSV/XLSX.
+- `tools/render_live_excel_preview.mjs` - рендер live XLSX в PNG для вставки в ТЗ.
 - `reference/legacy_erp_to_1c_import_module.bsl` - фрагмент legacy 1C-сервиса, учтенный при описании требований.
 - `ui/index.html` - текущий HTML-макет матрицы.
 - `php_legacy/lib_1c_soap_layer.php` - legacy PHP-слой вызовов SOAP 1C (`c1c_getAkts`, `c1c_getAccHist`, `c1c_getcoacsu`, `c1c_getcoacsuinfo1C` и др.).
 - `php_legacy/rowsLib.php`, `php_legacy/class.php`, `php_legacy/printShablonFuntions.php` - ERP PHP-код с текущими SQL-связями поставок, счетов, актов, оплат и отчетных форм.
 - `api/reconciliation_api_server.redacted.py` - текущий прототип API матрицы сверки с редактированными параметрами подключения.
 - `sql/1c_reconciliation_schema.sql` - схема логирования запусков и результатов сверки.
-- `sql/PowerBI_master_spec_invoice_matrix.sql` - SQL-референс по матрице поставка/счет/операция.
+- `sql/PowerBI_master_spec_invoice_matrix.sql` - SQL-материал по матрице поставка/счет/операция.
 
 ## Что проверять в аудите
 
 - Маппинг ERP и 1C сущностей в разрезе поставки.
 - Формулы колонок `Сумма оплаты`, `Возмещаемые расходы`, `Невозмещаемые расходы`, `(+/-)`.
-- Логику статусов `Нет СФ/УПД`, `Вопрос по НДС`, `Есть остаток`, `Сумма расходится`, `Договор расходится`.
+- Логику статусов `Нет СФ/УПД`, `Вопрос по НДС`, `Долг`, `Переплата`, `Сумма расходится`, `Договор расходится`.
 - Требования к журналированию расхождений для анализа частоты проблем по типам операций.

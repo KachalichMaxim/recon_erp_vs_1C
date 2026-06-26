@@ -113,6 +113,8 @@
   .chip.sum .dot { background: var(--sum-mismatch); }
   .chip.vat { background: var(--vat-bg); color: oklch(0.38 0.13 290); border-color: var(--vat-border); }
   .chip.vat .dot { background: var(--vat); }
+  .chip.fields, .chip.source-error { background: var(--miss-erp-bg); color: oklch(0.42 0.12 75); border-color: var(--miss-erp-border); }
+  .chip.fields .dot, .chip.source-error .dot { background: var(--miss-erp); }
   .chip.neutral { background: var(--bg-sunken); color: var(--muted); border-color: var(--border); }
   .chip.neutral .dot { background: var(--muted-2); }
   .chip.pending { background: var(--brand-bg); color: var(--brand-2); border-color: oklch(0.85 0.08 235); }
@@ -215,7 +217,7 @@
   .matrix-kpi .l { color: var(--muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; line-height: 1.2; }
   .matrix-shell { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
   .matrix-scroll { overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 220px); min-height: 0; }
-  .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 11.5px; }
+  .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 11px; }
   .matrix-table th {
     position: sticky;
     top: 0;
@@ -223,11 +225,11 @@
     background: oklch(0.9 0.006 85);
     color: var(--ink-2);
     text-align: left;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.045em;
-    padding: 8px 7px;
+    padding: 7px 5px;
     border-bottom: 1px solid var(--border-strong);
     white-space: normal;
     line-height: 1.15;
@@ -235,7 +237,7 @@
   }
   .matrix-table th .th-wrap { display: inline-block; min-width: 0; }
   .matrix-table th:first-child { left: 0; z-index: 5; }
-  .matrix-table td { padding: 7px 7px; border-bottom: 1px solid var(--border); background: var(--surface); vertical-align: middle; }
+  .matrix-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); background: var(--surface); vertical-align: middle; }
   .matrix-table tr:hover td { background: var(--surface-2); }
   .matrix-table .sticky-col {
     position: sticky;
@@ -243,8 +245,20 @@
     z-index: 2;
     box-shadow: 1px 0 0 var(--border);
   }
-  .matrix-table .money, .matrix-table .delta { text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; white-space: nowrap; }
-  .matrix-table .delta.pos, .matrix-table .delta.neg { color: oklch(0.42 0.15 25); }
+  .matrix-table .money, .matrix-table .delta { text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; white-space: pre-line; }
+  .matrix-table td.mono { white-space: pre-line; }
+  .matrix-table .sf-cell { padding-top: 5px; padding-bottom: 5px; }
+  .matrix-table .sf-lines {
+    max-height: 74px;
+    overflow: auto;
+    white-space: pre-line;
+    line-height: 1.35;
+    padding-right: 2px;
+  }
+  .matrix-table .delta.pos { color: oklch(0.48 0.13 75); }
+  .matrix-table .delta.neg { color: oklch(0.42 0.15 25); }
+  .matrix-kpi .v.pos { color: oklch(0.48 0.13 75); }
+  .matrix-kpi .v.neg { color: oklch(0.42 0.15 25); }
   .matrix-row.parent td { font-weight: 650; background: var(--surface-2); }
   .matrix-row.level-0 td { background: oklch(0.965 0.006 85); }
   .matrix-row.level-1 td { background: oklch(0.975 0.005 85); }
@@ -288,23 +302,62 @@
   .matrix-badge.no1c { background: var(--miss-1c-bg); color: oklch(0.4 0.14 45); border-color: var(--miss-1c-border); }
   .matrix-badge.noerp { background: var(--miss-erp-bg); color: oklch(0.42 0.12 75); border-color: var(--miss-erp-border); }
   .matrix-badge.sum { background: var(--sum-mismatch-bg); color: oklch(0.4 0.15 25); border-color: var(--sum-mismatch-border); }
+  .matrix-badge.debt { background: var(--sum-mismatch-bg); color: oklch(0.4 0.15 25); border-color: var(--sum-mismatch-border); }
+  .matrix-badge.overpay { background: oklch(0.965 0.045 85); color: oklch(0.43 0.12 75); border-color: oklch(0.83 0.09 80); }
   .matrix-badge.nosf { background: var(--vat-bg); color: oklch(0.38 0.13 290); border-color: var(--vat-border); }
+  .matrix-badge.no-sf { background: var(--vat-bg); color: oklch(0.38 0.13 290); border-color: var(--vat-border); }
   .matrix-badge.nokey { background: var(--panel); color: var(--muted); border-color: var(--border-strong); }
+  .matrix-badge.fields, .matrix-badge.source-error { background: var(--miss-erp-bg); color: oklch(0.42 0.12 75); border-color: var(--miss-erp-border); }
   .matrix-badge.pending { background: var(--brand-bg); color: var(--brand-2); border-color: oklch(0.85 0.08 235); }
   .matrix-badge.limit { background: var(--bg-sunken); color: var(--ink-2); border-color: var(--border-strong); }
   .matrix-status-cell .matrix-badges { flex-wrap: wrap; overflow: visible; }
   .matrix-detail { margin: 0; padding: 9px 10px 10px; }
   .matrix-detail-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; margin-bottom: 6px; }
-  .matrix-detail-grid { display: grid; grid-template-columns: 1.1fr 1.1fr 0.9fr 0.9fr 1.1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+  .matrix-detail-grid { display: grid; grid-template-columns: 0.78fr 1.25fr 1.05fr 0.95fr 0.8fr 1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+  .matrix-detail-grid.erp-only { grid-template-columns: 1.4fr 1.4fr 0.85fr 1fr; }
   .matrix-detail-grid > div { padding: 6px 8px; border-bottom: 1px solid var(--border); min-width: 0; }
-  .matrix-detail-grid > div:nth-child(5n) { text-align: right; }
-  .matrix-detail-grid > div:nth-last-child(-n+5) { border-bottom: none; }
+  .matrix-detail-grid > div:nth-child(6n) { text-align: right; }
+  .matrix-detail-grid > div:nth-last-child(-n+6) { border-bottom: none; }
+  .matrix-detail-grid.erp-only > div:nth-child(6n) { text-align: left; }
+  .matrix-detail-grid.erp-only > div:nth-child(4n) { text-align: right; }
+  .matrix-detail-grid.erp-only > div:nth-last-child(-n+6) { border-bottom: 1px solid var(--border); }
+  .matrix-detail-grid.erp-only > div:nth-last-child(-n+4) { border-bottom: none; }
   .matrix-detail-head { background: var(--bg-sunken); color: var(--muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.045em; }
   .matrix-empty { padding: 36px; text-align: center; color: var(--muted); font-size: 13px; }
+  .monitor-page { max-width: none; padding: 14px 16px 32px; }
+  .monitor-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; margin-bottom: 10px; }
+  .monitor-title { font-family: 'Inter Tight'; font-size: 20px; font-weight: 650; letter-spacing: 0; }
+  .monitor-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .monitor-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .monitor-controls { display: grid; grid-template-columns: minmax(260px, 360px) minmax(260px, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .monitor-kpis { display: grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .monitor-shell { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
+  .monitor-scroll { overflow: auto; max-height: calc(100vh - 265px); }
+  .monitor-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 11px; }
+  .monitor-table th { position: sticky; top: 0; z-index: 4; background: var(--bg-sunken); color: var(--ink-2); border-bottom: 1px solid var(--border); padding: 8px 7px; text-align: left; text-transform: uppercase; letter-spacing: 0.045em; line-height: 1.1; }
+  .monitor-table td { padding: 8px 7px; border-bottom: 1px solid var(--border); vertical-align: top; background: var(--surface); }
+  .monitor-table tr:hover td { background: var(--surface-2); }
+  .monitor-status { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 0; max-width: 100%; }
+  .monitor-status .matrix-badge {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.12;
+    padding: 3px 6px;
+    border-radius: 7px;
+  }
+  .monitor-doc { display: grid; gap: 3px; min-width: 0; }
+  .monitor-doc .doc-main { font-weight: 650; white-space: normal; overflow-wrap: anywhere; }
+  .monitor-doc .doc-meta { color: var(--muted); font-size: 10px; line-height: 1.25; overflow-wrap: anywhere; }
+  .monitor-reason { line-height: 1.3; }
+  .monitor-source { color: var(--muted); font-size: 10px; line-height: 1.3; overflow-wrap: anywhere; }
+  .monitor-empty { padding: 34px; text-align: center; color: var(--muted); font-size: 13px; }
   @media (max-width: 1180px) {
     .matrix-controls { grid-template-columns: 1fr; }
     .matrix-kpis { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
     .matrix-detail { margin-left: 0; }
+    .monitor-controls { grid-template-columns: 1fr; }
+    .monitor-kpis { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
   }
 
   /* ================= Progress (screen 2) ================= */
@@ -589,7 +642,7 @@ const DOCS = [
     opId: 'ERP-SCHETS-14994',
     opTitle: 'Счета покупателю из ERP veda_schets',
     status: 'match',
-    erp: { num: 'ВА-015695, ВА-015696, ВА-015697', date: '26.12.2024', amount: 166_901.52, kod1c: 'ERP-SCHETS-14994', vat: '—', invoice: '3 счета', reimbursement: 'Счет покупателю', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: 'ВА-015695, ВА-015696, ВА-015697', date: '26.12.2024', amount: 166_901.52, kod1c: 'ERP-SCHETS-14994', vat: '—', invoice: '3 счета', reimbursement: 'Счет покупателю', reimbursementId: 0, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: 'ВА-015695, ВА-015696, ВА-015697', date: '26.12.2024', amount: 166_901.52, kod1c: 'ERP-SCHETS-14994', vat: '—', doctype: 'Счет на оплату покупателю', invoice: '3 счета', dog: '660/1' },
   },
   {
@@ -599,7 +652,7 @@ const DOCS = [
     opId: 'ERP-PAID-14994',
     opTitle: 'ERP get_paidsum / veda_acchist_docs',
     status: 'match',
-    erp: { num: 'ПП 1866', date: '10.02.2025', amount: 833_921.00, kod1c: '00БП-001559', vat: '—', reimbursement: 'Оплата покупателя', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: 'ПП 1866', date: '10.02.2025', amount: 833_921.00, kod1c: '00БП-001559', vat: '—', reimbursement: 'Оплата покупателя', reimbursementId: 0, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: '00БП-001559', date: '10.02.2025', amount: 833_921.00, kod1c: '00БП-001559', vat: '—', doctype: 'Поступление на расчетный счет', dog: '660/1' },
   },
   {
@@ -609,7 +662,7 @@ const DOCS = [
     opId: 'ERP-REIMB-14994',
     opTitle: 'ERP get_expensessum: возмещаемые операции',
     status: 'match',
-    erp: { num: 'операции 9,10,12,13', date: '10.01.2025-23.01.2025', amount: 829_165.90, kod1c: 'ERP-REIMB-14994', vat: '—', reimbursement: 'Возмещаемые расходы', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: 'операции 9,10,12,13', date: '10.01.2025-23.01.2025', amount: 829_165.90, kod1c: 'ERP-REIMB-14994', vat: '—', reimbursement: 'Возмещаемые расходы', reimbursementId: 1, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: 'сумма строк 1С', date: '10.01.2025-23.01.2025', amount: 829_165.90, kod1c: 'ERP-REIMB-14994', vat: '—', doctype: 'Поступление/акты по возмещаемым', dog: '660/1' },
   },
   {
@@ -619,7 +672,7 @@ const DOCS = [
     opId: 'ERP-NONREIMB-14994',
     opTitle: 'ERP realization/profit: невозмещаемые услуги агента',
     status: 'match',
-    erp: { num: '00БП-000198', date: '21.01.2025', amount: 67_055.99, kod1c: '00БП-000198', vat: '20%', reimbursement: 'Невозмещаемые услуги Агента (Вознаграждение)', dog: '660/1', dogCode1c: 'БП-003453' },
+    erp: { num: '00БП-000198', date: '21.01.2025', amount: 67_055.99, kod1c: '00БП-000198', vat: '20%', reimbursement: 'Невозмещаемые услуги Агента (Вознаграждение)', reimbursementId: 2, dog: '660/1', dogCode1c: 'БП-003453' },
     rc:  { num: '00БП-000198', date: '21.01.2025', amount: 67_055.99, kod1c: '00БП-000198', vat: '20%', doctype: 'Реализация/УПД', dog: '660/1' },
   },
   {
@@ -629,7 +682,7 @@ const DOCS = [
     opId: 'ERP-SF-14994',
     opTitle: 'УПД/СФ по данным ERP и 1С',
     status: 'match',
-    erp: { num: '00БП-000198', date: '21.01.2025', amount: 0, kod1c: '00БП-000198', vat: '—', reimbursement: 'Счет-фактура / УПД' },
+    erp: { num: '00БП-000198', date: '21.01.2025', amount: 0, kod1c: '00БП-000198', vat: '—', reimbursement: 'Счет-фактура / УПД', reimbursementId: 0 },
     rc:  { num: '00БП-000198', date: '21.01.2025', amount: 0, kod1c: '00БП-000198', vat: '—', doctype: 'Счет-фактура / УПД' },
   },
 ];
@@ -647,8 +700,8 @@ const PROGRESS_LOG = [
   { tag: 'info', t: '0.08s', msg: 'Собираем коды 1С: принципал ООО «Восточный Путь» (ИНН 7728123456)' },
   { tag: 'info', t: '0.15s', msg: 'Собираем коды 1С: покупатель АО «Металлторг-Урал» (ИНН 6658987112)' },
   { tag: 'ok',   t: '0.42s', msg: 'Найдено 12 привязанных операций, 19 фин.документов' },
-  { tag: 'info', t: '0.58s', msg: 'Формируем запрос SOAP к 1С: Enterprise 8.3 (zapros/RequestDocs)' },
-  { tag: 'info', t: '1.12s', msg: 'Запрос отправлен в 1С: 19 кодов' },
+  { tag: 'info', t: '0.58s', msg: 'Формируем запрос к 1С по документам поставки' },
+  { tag: 'info', t: '1.12s', msg: 'Запрос отправлен в 1С, 19 кодов' },
   { tag: 'info', t: '1.34s', msg: '1С подтвердила: получение кодов' },
   { tag: 'info', t: '2.20s', msg: 'Ожидание ответа от 1С...' },
   { tag: 'ok',   t: '3.42s', msg: '1С вернула 18 документов (1 не найден)' },
@@ -656,7 +709,7 @@ const PROGRESS_LOG = [
   { tag: 'info', t: '3.78s', msg: 'Сопоставление по номер+дата (fallback)' },
   { tag: 'warn', t: '4.02s', msg: '2 документа найдены только в 1С — не привязаны к ЕРП' },
   { tag: 'warn', t: '4.04s', msg: '1 документ найден только в ЕРП — в 1С не проведён' },
-  { tag: 'warn', t: '4.06s', msg: '2 расхождения по сумме, 1 по возмещаемости НДС' },
+  { tag: 'warn', t: '4.06s', msg: '2 расхождения по сумме, 1 расхождение по ставке НДС' },
   { tag: 'ok',   t: '4.18s', msg: 'Отчёт сформирован и сохранён в акт_сверки.reports' },
 ];
 
@@ -685,6 +738,14 @@ const formatCurrencyBreakdown = (items, fallbackTotal = 0) => {
     .map(x => fmtMoney(Number(x.total || 0), x.currency || 'RUB'))
     .join(' · ');
 };
+const pluralRu = (value, one, few, many) => {
+  const n = Math.abs(Number(value) || 0);
+  if ([11, 12, 13, 14].includes(n % 100)) return many;
+  if (n % 10 === 1) return one;
+  if ([2, 3, 4].includes(n % 10)) return few;
+  return many;
+};
+const suppliesCountLabel = (value) => `${Number(value) || 0} ${pluralRu(value, 'поставка', 'поставки', 'поставок')}`;
 const groupBy = (arr, fn) => arr.reduce((m, x) => { const k = fn(x); (m[k] ||= []).push(x); return m; }, {});
 window.currencyLabel = currencyLabel;
 window.fmtMoney = fmtMoney;
@@ -696,7 +757,10 @@ const STATUS_META = {
   'miss-erp': { label: 'Нет в ЕРП',           color: 'miss-erp', short: 'ERP' },
   'miss-1c':  { label: 'Нет в 1С',            color: 'miss-1c',  short: '1C' },
   sum:      { label: 'Расхождение по сумме', color: 'sum',      short: '≠' },
-  vat:      { label: 'Возмещаемость НДС',    color: 'vat',      short: 'НДС' },
+  vat:      { label: 'Вопрос по НДС',        color: 'vat',      short: 'НДС' },
+  fields:   { label: 'Требует проверки',      color: 'fields',   short: 'Проверка' },
+  'no-sf':  { label: 'Нет СФ/УПД',            color: 'vat',      short: 'СФ' },
+  'source-error': { label: 'Ошибка источника 1С', color: 'source-error', short: '1C!' },
   'no-kod1c': { label: 'Нет ключа 1С',        color: 'no-kod1c', short: 'Код' },
   pending:  { label: 'Не сверено',            color: 'pending',  short: '?' },
 };
@@ -754,14 +818,27 @@ window.ERP_SNAPSHOT = {
 const params = new URLSearchParams(window.location.search);
 const getApiBase = () => (params.get('api') || '').replace(/\/$/, '');
 const getSpecId = () => params.get('spec_id') || params.get('specId') || params.get('id') || '';
+const getClientId = () => params.get('client_id') || params.get('clientId') || params.get('legal_id') || params.get('contact_id') || '';
+const getDogId = () => params.get('dog_id') || params.get('dogId') || '';
+const getMatrixLimit = () => params.get('limit') || '25';
+const getClientScope = () => params.get('scope') || params.get('client_scope') || 'auto';
+const getFixtureName = () => params.get('fixture') || params.get('reference') || '';
+const requestedViewName = () => (params.get('screen') || params.get('view') || window.location.hash.replace(/^#/, '') || '').toLowerCase();
+const isMonitorViewRequested = () => ['monitor', 'reconciliation', 'recon', 'compare'].includes(requestedViewName());
+const getCompareOneCFlag = () => {
+  const explicit = params.get('compare_1c') || params.get('compare1c') || params.get('with_1c');
+  if (explicit != null) return !['0', 'false', 'no', 'off'].includes(String(explicit).toLowerCase());
+  return isMonitorViewRequested();
+};
 const apiUrl = (path) => `${getApiBase()}${path}`;
 const getOneCTemplateUrl = () => apiUrl('/akt_sverki/templates/1c_reconciliation_upload_template.xlsx');
 window.RECONCILIATION_REPORT = null;
 
 const normalizeDeliveryFromSnapshot = (snapshot) => {
   const d = snapshot.delivery || {};
+  const snapshotClientId = d.client_id || snapshot.parameters?.client_id || '';
   return {
-    id: d.spec_id ? `SPEC-${d.spec_id}` : window.DELIVERY.id,
+    id: d.spec_id ? `SPEC-${d.spec_id}` : (snapshotClientId ? `CLIENT-${snapshotClientId}` : window.DELIVERY.id),
     number: d.request_label || (d.spec_number ? `Заявка № ${d.spec_number}` : window.DELIVERY.number),
     date: d.spec_date || window.DELIVERY.date,
     principal: d.org_name || window.DELIVERY.principal,
@@ -774,7 +851,7 @@ const normalizeDeliveryFromSnapshot = (snapshot) => {
     currency: d.goods_currency || window.DELIVERY.currency,
     totalAmount: d.goods_amount || 0,
     manager: d.manager_name || window.DELIVERY.manager,
-    status: `spec_id ${d.spec_id || snapshot.spec_id}`,
+    status: d.spec_id || snapshot.spec_id ? `spec_id ${d.spec_id || snapshot.spec_id}` : `client_id ${snapshotClientId}`,
   };
 };
 
@@ -801,8 +878,10 @@ const normalizeDocFromSnapshot = (doc) => ({
     currency: doc.currency || '',
     kod1c: doc.code1c || doc.dog_code1c || '',
     vat: doc.nds_name || '—',
+    vatId: Number(doc.nds_id || doc.f_nds || 0),
     invoice: doc.invoice_number || '',
     reimbursement: doc.reimbursement_name || (doc.invoice_number ? `Счет ${doc.invoice_number}` : '—'),
+    reimbursementId: Number(doc.reimbursement_id || doc.f_isvozm || 0),
     dog: doc.dog_number || '',
     dogCode1c: doc.dog_code1c || '',
     isDetailLine: Boolean((!doc.code1c && doc.invoice_number) || doc.type_name === 'Строка агрегирующего счета'),
@@ -827,8 +906,10 @@ const normalizePaymentFromSnapshot = (payment) => ({
     currency: payment.currency || 'RUB',
     kod1c: payment.code1c || '',
     vat: payment.reimbursement_name || '—',
+    vatId: Number(payment.nds_id || payment.f_nds || 0),
     invoice: payment.invoice_number || '',
     reimbursement: payment.reimbursement_name || (payment.invoice_number ? `Счет ${payment.invoice_number}` : '—'),
+    reimbursementId: Number(payment.reimbursement_id || payment.f_isvozm || 0),
     dog: '',
     dogCode1c: '',
     isDetailLine: false,
@@ -856,9 +937,37 @@ const applyErpSnapshot = (snapshot) => {
   if (docs.length > 0) window.DOCS = docs;
 };
 
-const loadErpSnapshot = async () => {
+const loadErpSnapshot = async (options = {}) => {
+  const compareOneC = options.compareOneC ?? false;
+  const fixture = getFixtureName();
+  if (fixture) {
+    const resp = await fetch(`./reference/${encodeURIComponent(fixture)}.json`);
+    if (!resp.ok) throw new Error(`Не удалось загрузить fixture ${fixture}: HTTP ${resp.status}`);
+    const payload = await resp.json();
+    applyErpSnapshot(payload);
+    return { state: 'loaded', message: `Загружен контрольный набор ERP ${fixture}` };
+  }
+
+  const clientId = getClientId();
+  if (clientId) {
+    const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope(), compare_1c: compareOneC ? '1' : '0' });
+    const dogId = getDogId();
+    if (dogId) query.set('dog_id', dogId);
+    const sourceMode = params.get('source') || params.get('source_mode');
+    if (sourceMode) query.set('source', sourceMode);
+    const resp = await fetch(apiUrl(`/api/reconciliation/client-matrix?${query.toString()}`));
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(text || `HTTP ${resp.status}`);
+    }
+    const payload = await resp.json();
+    if (!payload.ok) throw new Error(payload.error || 'ERP client matrix failed');
+    applyErpSnapshot(payload);
+    return { state: 'loaded', message: `ERP-данные загружены по client_id ${clientId}${compareOneC ? ' + сверка 1С' : ''}` };
+  }
+
   const specId = getSpecId();
-  if (!specId) return { state: 'mock', message: 'Откройте страницу с ?spec_id=<ID заявки>, чтобы подтянуть ERP-данные.' };
+  if (!specId) return { state: 'mock', message: 'Откройте страницу с ?client_id=<ID клиента> или ?spec_id=<ID заявки>, чтобы подтянуть ERP-данные.' };
   const resp = await fetch(apiUrl(`/api/reconciliation/erp-snapshot?spec_id=${encodeURIComponent(specId)}`));
   if (!resp.ok) {
     const text = await resp.text();
@@ -881,7 +990,13 @@ const uiStatusFromApi = (status, fields = []) => {
   if (status === 'MATCH') return 'match';
   if (status === 'NOT_FOUND_IN_1C') return 'miss-1c';
   if (status === 'NOT_FOUND_IN_ERP') return 'miss-erp';
-  if (status === 'FIELDS_MISMATCH') return fields.includes('sum') ? 'sum' : 'vat';
+  if (status === 'SOURCE_ERROR_1C' || status === 'ONEC_SOURCE_ERROR') return 'source-error';
+  if (status === 'NO_SF_UPD' || status === 'NOT_FOUND_SF' || status === 'MISSING_SF') return 'no-sf';
+  if (status === 'FIELDS_MISMATCH') {
+    if (fields.includes('sum') || fields.includes('amount')) return 'sum';
+    if (fields.includes('vat') || fields.includes('nds') || fields.includes('vat_rate')) return 'vat';
+    return 'fields';
+  }
   if (status === 'NOT_COMPARABLE') return 'no-kod1c';
   return 'pending';
 };
@@ -898,8 +1013,10 @@ const normalizeReportRowForUi = (row, index) => {
     currency: row.erp_currency || '',
     kod1c: row.erp_code1c || '',
     vat: row.erp_reimbursement || '—',
+    vatId: Number(row.erp_nds_id || row.erp_f_nds || 0),
     invoice: row.erp_invoice_number || '',
     reimbursement: row.erp_reimbursement || '',
+    reimbursementId: Number(row.erp_reimbursement_id || row.erp_f_isvozm || 0),
     dog: row.erp_dog_number || '',
     dogCode1c: row.erp_dog_code1c || '',
     isAggregated,
@@ -964,7 +1081,7 @@ const applyReconciliationReport = (payload) => {
   window.DOCS = rows.map(normalizeReportRowForUi);
   return {
     when: new Date().toLocaleString('ru-RU'),
-    user: payload.source_state === 'postgresql' ? 'PostgreSQL 1С' : payload.source_state === 'xlsx' ? 'XLSX 1С' : '1С',
+    user: '1С',
     summary: payload.summary || {},
     source: payload.source || null,
     sourceState: payload.source_state || '',
@@ -1004,6 +1121,7 @@ const moneyValue = (value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
+const balanceLabel = (delta) => moneyValue(delta) > 0.01 ? 'Переплата' : moneyValue(delta) < -0.01 ? 'Долг' : '';
 const hasText = (value) => String(value || '').trim().length > 0;
 const meaningfulLabel = (value) => {
   const text = String(value || '').trim();
@@ -1014,6 +1132,10 @@ const compactList = (items, empty = '—') => {
   const values = uniqueList(items);
   if (!values.length) return empty;
   return values.length > 2 ? `${values.slice(0, 2).join(', ')} +${values.length - 2}` : values.join(', ');
+};
+const multiLineList = (items, empty = '—') => {
+  const values = uniqueList(items);
+  return values.length ? values.join('\n') : empty;
 };
 const docAmount = (doc) => moneyValue(doc?.erp?.amount ?? doc?.rc?.amount);
 const docDate = (doc) => doc?.erp?.date || doc?.rc?.date || '';
@@ -1039,24 +1161,30 @@ const isSfDoc = (doc) => {
   return label.includes('фактур') || label.includes('invoice') || /^сф[-\s]/i.test(doc?.erp?.num || '') || /^сф[-\s]/i.test(doc?.rc?.num || '');
 };
 const reimbursementKind = (doc) => {
-  const text = `${doc?.erp?.reimbursement || ''} ${doc?.erp?.vat || ''} ${doc?.opTitle || ''}`.toLowerCase();
-  if (text.includes('невозм')) return 'non';
-  if (text.includes('возмещ')) return 'reimb';
+  const value = Number(doc?.erp?.reimbursementId ?? doc?.reimbursementId ?? 0);
+  if (value === 1) return 'reimb';
+  if (value === 2) return 'non';
   return '';
 };
 const docStatusBadge = (status) => {
-  if (status === 'match') return { key: 'ok', label: 'ОК' };
+  if (status === 'match') return { key: 'ok', label: 'Совпало' };
   if (status === 'limited') return { key: 'limit', label: 'Строка 1С' };
+  if (status === 'source-error') return { key: 'source-error', label: 'Ошибка 1С' };
   if (status === 'miss-1c') return { key: 'no1c', label: 'Нет в 1С' };
   if (status === 'miss-erp') return { key: 'noerp', label: 'Нет в ERP' };
   if (status === 'sum') return { key: 'sum', label: 'Сумма расходится' };
-  if (status === 'vat') return { key: 'nosf', label: 'Проверить НДС' };
+  if (status === 'vat') return { key: 'nosf', label: 'Вопрос по НДС' };
+  if (status === 'no-sf') return { key: 'no-sf', label: 'Нет СФ/УПД' };
+  if (status === 'fields') return { key: 'fields', label: 'Требует проверки' };
   if (status === 'no-kod1c') return { key: 'nokey', label: 'Нет ключа 1С' };
   return { key: 'pending', label: 'Не сверено' };
 };
 
 const buildMatrixModel = () => {
   const snapshot = window.ERP_SNAPSHOT || {};
+  if (snapshot.matrix_model && Array.isArray(snapshot.matrix_model.clients)) {
+    return snapshot.matrix_model;
+  }
   const deliveryRaw = snapshot.delivery || {};
   const delivery = window.DELIVERY || {};
   const docs = Array.isArray(window.DOCS) ? window.DOCS : [];
@@ -1076,20 +1204,8 @@ const buildMatrixModel = () => {
   const deliveryLabel = delivery.number || (specNumber !== '—' ? `Заявка № ${specNumber}` : delivery.id);
 
   const badgesForDocs = (sourceDocs, delta, sfDocs) => {
-    const issueCounts = sourceDocs.reduce((acc, doc) => {
-      acc[doc.status] = (acc[doc.status] || 0) + 1;
-      return acc;
-    }, {});
     const rowBadges = [];
-    if ((issueCounts['miss-1c'] || 0) > 0) rowBadges.push({ key: 'no1c', label: `Нет в 1С ${issueCounts['miss-1c']}` });
-    if ((issueCounts['miss-erp'] || 0) > 0) rowBadges.push({ key: 'noerp', label: `Нет в ERP ${issueCounts['miss-erp']}` });
-    if ((issueCounts.sum || 0) > 0) rowBadges.push({ key: 'sum', label: 'Сумма расходится' });
-    else if (Math.abs(delta) > 0.01) rowBadges.push({ key: 'sum', label: 'Есть остаток' });
-    if (sourceDocs.length > 0 && !sfDocs.length) rowBadges.push({ key: 'nosf', label: 'Нет СФ' });
-    if ((issueCounts.limited || 0) > 0) rowBadges.push({ key: 'limit', label: `Строка 1С ${issueCounts.limited}` });
-    if ((issueCounts['no-kod1c'] || 0) > 0) rowBadges.push({ key: 'nokey', label: `Нет ключа 1С ${issueCounts['no-kod1c']}` });
-    if ((issueCounts.pending || 0) > 0) rowBadges.push({ key: 'pending', label: `Не сверено ${issueCounts.pending}` });
-    if (!rowBadges.length) rowBadges.push({ key: 'ok', label: 'ОК' });
+    if (balanceLabel(delta)) rowBadges.push({ key: moneyValue(delta) > 0 ? 'overpay' : 'debt', label: balanceLabel(delta) });
     return rowBadges;
   };
   const totalsFromDocs = (sourceDocs, useSnapshotTotals = false) => {
@@ -1122,12 +1238,12 @@ const buildMatrixModel = () => {
       ? (pickMoney(settlements.customer_settlement_balance_rub, settlements.control_sheet_delta, balance.money_balance) ?? moneyValue(paymentSum - reimbursableSum - nonReimbursableSum))
       : moneyValue(paymentSum - reimbursableSum - nonReimbursableSum);
     return {
-      invoiceLabel: compactList(invoiceDocs.map(docNumber), invoiceDocs.length ? `${invoiceDocs.length} счет(ов)` : '—'),
+      invoiceLabel: multiLineList(invoiceDocs.map(docNumber), invoiceDocs.length ? `${invoiceDocs.length} счет(ов)` : '—'),
       invoiceSum,
       paymentSum,
       reimbursableSum,
       nonReimbursableSum,
-      sfLabel: compactList(sfDocs.map(docNumber), '—'),
+      sfLabel: multiLineList(sfDocs.map(docNumber), '—'),
       delta,
       badges: badgesForDocs(sourceDocs, delta, sfDocs),
       showAmounts: true,
@@ -1357,7 +1473,8 @@ const buildMatrixModel = () => {
 };
 
 /* ===== Matrix page ===== */
-const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareState }) => {
+const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareState, dataState }) => {
+  const expectsUrlData = Boolean(getClientId() || getSpecId() || getFixtureName());
   const model = buildMatrixModel();
   const [selectedClient, setSelectedClient] = React.useState(() => model.clients[0]?.id || '');
   const [query, setQuery] = React.useState('');
@@ -1382,6 +1499,51 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
     setExpanded(defaults);
   }, [selectedClient, model.sourceLabel]);
 
+  if (expectsUrlData && dataState?.state === 'loading') {
+    const loadingTitle = getClientId()
+      ? `Загружаем live-матрицу по client_id ${getClientId()}`
+      : 'Загружаем данные матрицы';
+    const loadingHint = getClientId()
+      ? `Выборка может занимать несколько минут: считаем до ${getMatrixLimit()} поставок через ERP-процедуры.`
+      : 'Ждем ответ ERP API.';
+    return (
+      <div className="page matrix-page">
+        <div className="matrix-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="matrix-title" style={{ marginTop: 12 }}>{loadingTitle}</div>
+            <div className="matrix-sub">{loadingHint}</div>
+          </div>
+        </div>
+        <div className="matrix-shell" style={{ padding: 24 }}>
+          <div className="source-banner">
+            <IconSearch size={15}/>
+            <span>{dataState.message || 'Проверяем контекст ERP...'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (expectsUrlData && dataState?.state === 'error') {
+    return (
+      <div className="page matrix-page">
+        <div className="matrix-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="matrix-title" style={{ marginTop: 12 }}>Матрица не загрузилась</div>
+            <div className="matrix-sub">Live API не вернул данные. Для тяжелых договоров попробуйте меньший `limit`.</div>
+          </div>
+        </div>
+        <div className="matrix-shell" style={{ padding: 24 }}>
+          <div className="source-banner warn">
+            <IconAlert size={15}/>
+            <span>{dataState.message || 'Ошибка загрузки ERP API'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const toggle = (id) => {
     setExpanded(prev => {
       const next = new Set(prev);
@@ -1401,13 +1563,39 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
   if (selected?.root) addRows(selected.root);
 
   const rowText = (row, value) => row.showAmounts === false ? '—' : (value || '—');
-  const rowMoneyText = (row, value) => row.showAmounts === false ? '—' : fmtMoney(value);
-  const renderMoney = (row, value) => <span className="mono">{rowMoneyText(row, value)}</span>;
-  const renderBadges = (badges) => (
-    <div className="matrix-badges">
-      {(badges || []).map((b, idx) => <span className={`matrix-badge ${b.key}`} key={`${b.key}-${idx}`}>{b.label}</span>)}
-    </div>
-  );
+  const rowMoneyText = (row, key) => {
+    if (row.showAmounts === false) return '—';
+    const label = row[`${key}Label`];
+    if (label !== undefined && label !== null && String(label).trim() !== '') return label;
+    return fmtMoney(row[key]);
+  };
+  const totalMoneyText = (key) => {
+    const label = model.totals?.[`${key}Label`];
+    if (label !== undefined && label !== null && String(label).trim() !== '') return label;
+    return fmtMoney(model.totals?.[key]);
+  };
+  const renderMoney = (row, key) => <span className="mono">{rowMoneyText(row, key)}</span>;
+  const renderBadges = (badges) => {
+    const list = Array.isArray(badges) ? badges : [];
+    if (!list.length) return <span className="muted">—</span>;
+    return (
+      <div className="matrix-badges">
+        {list.map((b, idx) => <span className={`matrix-badge ${b.key}`} title={badgeHint(b)} key={`${b.key}-${idx}`}>{b.label}</span>)}
+      </div>
+    );
+  };
+  const badgeHint = (badge) => {
+    const label = String(badge?.label || '');
+    const key = String(badge?.key || '');
+    if (key === 'ok') return 'По этой строке не найдено расхождений.';
+    if (key === 'debt' || key === 'overpay' || (key === 'sum' && (label.includes('Долг') || label.includes('Переплата')))) return 'Долг/переплата = сумма оплат - возмещаемые расходы - невозмещаемые расходы.';
+    if (key === 'fields') return 'Документ требует проверки в мониторе ERP ↔ 1С.';
+    if (key === 'no1c') return 'ERP-документ есть, но соответствующий документ 1С не найден в источнике сверки.';
+    if (key === 'noerp') return 'Документ 1С есть, но соответствующая ERP-строка не найдена.';
+    if (key === 'nosf' || key === 'no-sf') return 'Проверить закрывающий документ или ставку НДС.';
+    if (key === 'nokey') return 'Для автоматической сверки не хватает кода/ключа 1С.';
+    return label;
+  };
   const deltaClass = (value) => moneyValue(value) > 0.01 ? 'pos' : moneyValue(value) < -0.01 ? 'neg' : '';
   const matrixColumns = [
     'Иерархия',
@@ -1425,12 +1613,12 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
     'Иерархия': `${'  '.repeat(row.level)}${row.name}${row.note ? ` (${row.note})` : ''}`,
     '№ спецификации': row.specNo || '',
     'Счет': rowText(row, row.invoiceLabel),
-    'Сумма по счету': rowMoneyText(row, row.invoiceSum),
-    'Сумма оплаты': rowMoneyText(row, row.paymentSum),
-    'Возмещаемые расходы': rowMoneyText(row, row.reimbursableSum),
-    'Невозмещаемые расходы': rowMoneyText(row, row.nonReimbursableSum),
+    'Сумма по счету': rowMoneyText(row, 'invoiceSum'),
+    'Сумма оплаты': rowMoneyText(row, 'paymentSum'),
+    'Возмещаемые расходы': rowMoneyText(row, 'reimbursableSum'),
+    'Невозмещаемые расходы': rowMoneyText(row, 'nonReimbursableSum'),
     '№ счф': rowText(row, row.sfLabel),
-    '(+/-)': rowMoneyText(row, row.delta),
+    '(+/-)': rowMoneyText(row, 'delta'),
     'Статус': (row.badges || []).map(b => b.label).join(', '),
   }));
   const serializeMatrix = (separator) => {
@@ -1455,6 +1643,17 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
     window.setTimeout(() => setCopyState(''), 1800);
   };
   const handleExport = () => {
+    const clientId = getClientId();
+    if (clientId) {
+      const query = new URLSearchParams({ client_id: clientId, limit: getMatrixLimit(), scope: getClientScope(), compare_1c: '0' });
+      const dogId = getDogId();
+      if (dogId) query.set('dog_id', dogId);
+      const currentParams = new URLSearchParams(window.location.search);
+      const sourceMode = currentParams.get('source') || currentParams.get('source_mode');
+      if (sourceMode) query.set('source', sourceMode);
+      window.location.href = apiUrl(`/api/reconciliation/client-matrix.xlsx?${query.toString()}`);
+      return;
+    }
     const blob = new Blob(['\ufeff' + serializeMatrix(';')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1476,12 +1675,12 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
             <span className="mono muted" style={{ fontSize: 11.5 }}>{model.sourceLabel}</span>
           </div>
           <div className="matrix-title">Акт сверки по взаиморасчетам</div>
-          <div className="matrix-sub">{selected?.name || 'Клиент'} · {model.rowsCount} документальных строк</div>
+          <div className="matrix-sub">{selected?.name || 'Клиент'} · {suppliesCountLabel(model.rowsCount)}</div>
         </div>
         <div className="matrix-actions">
-          <button className="btn sm" onClick={onOpenReport}><IconDoc size={13}/>{lastReport ? 'Отчет сверки' : 'Сверить с 1С'}</button>
+          <button className="btn sm" onClick={onOpenReport}><IconDoc size={13}/>Монитор ERP↔1С</button>
           <button className="btn sm" onClick={handleCopy}><IconCopy size={13}/>{copyState || 'Скопировать'}</button>
-          <button className="btn brand" onClick={handleExport}><IconDownload size={14}/>Выгрузить</button>
+          <button className="btn brand" onClick={handleExport} title="Скачать бухгалтерскую форму .xlsx"><IconDownload size={14}/>Выгрузить XLSX</button>
         </div>
       </div>
 
@@ -1491,7 +1690,7 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
         </select>
         <div className="matrix-search">
           <IconSearch size={14}/>
-          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск по клиенту, договору, спецификации, счету..." />
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск по ЮЛ, ИНН, client_id, договору, заявке, счету, № 1С..." />
         </div>
         <div className="seg">
           <button className={!onlyIssues ? 'on' : ''} onClick={() => setOnlyIssues(false)}>Все</button>
@@ -1500,37 +1699,37 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
       </div>
 
       <div className="matrix-kpis">
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.invoiceSum)}</div><div className="l">Сумма по счетам</div></div>
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.paymentSum)}</div><div className="l">Сумма оплат</div></div>
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.reimbursableSum)}</div><div className="l">Возмещаемые расходы</div></div>
-        <div className="matrix-kpi"><div className="v mono">{fmtMoney(model.totals.nonReimbursableSum)}</div><div className="l">Невозмещаемые расходы</div></div>
-        <div className="matrix-kpi"><div className={`v mono ${deltaClass(model.totals.delta)}`}>{fmtMoney(model.totals.delta)}</div><div className="l">(+/-) оплат-расходы</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('invoiceSum')}</div><div className="l">Сумма по счетам</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('paymentSum')}</div><div className="l">Сумма оплат</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('reimbursableSum')}</div><div className="l">Возмещаемые расходы</div></div>
+        <div className="matrix-kpi"><div className="v mono">{totalMoneyText('nonReimbursableSum')}</div><div className="l">Невозмещаемые расходы</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${deltaClass(model.totals.delta)}`}>{totalMoneyText('delta')}</div><div className="l">(+/-) оплат-расходы</div></div>
       </div>
 
       <div className="matrix-shell">
         <div className="matrix-scroll">
           <table className="matrix-table">
             <colgroup>
-              <col style={{ width: '24%' }}/>
-              <col style={{ width: '8%' }}/>
-              <col style={{ width: '8%' }}/>
-              <col style={{ width: '10%' }}/>
+              <col style={{ width: '20%' }}/>
+              <col style={{ width: '5.5%' }}/>
               <col style={{ width: '9%' }}/>
+              <col style={{ width: '9%' }}/>
+              <col style={{ width: '9.5%' }}/>
               <col style={{ width: '10%' }}/>
-              <col style={{ width: '11%' }}/>
+              <col style={{ width: '10.5%' }}/>
+              <col style={{ width: '10%' }}/>
               <col style={{ width: '7%' }}/>
-              <col style={{ width: '5%' }}/>
-              <col style={{ width: '8%' }}/>
+              <col style={{ width: '9.5%' }}/>
             </colgroup>
             <thead>
               <tr>
                 <th className="sticky-col"><span className="th-wrap">Иерархия</span></th>
-                <th><span className="th-wrap">№<br/>спецификации</span></th>
+                <th><span className="th-wrap">№<br/>спец.</span></th>
                 <th><span className="th-wrap">Счет</span></th>
                 <th style={{ textAlign: 'right' }}><span className="th-wrap">Сумма<br/>по счету</span></th>
                 <th style={{ textAlign: 'right' }}><span className="th-wrap">Сумма<br/>оплаты</span></th>
-                <th style={{ textAlign: 'right' }}><span className="th-wrap">Возмещаемые<br/>расходы</span></th>
-                <th style={{ textAlign: 'right' }}><span className="th-wrap">Невозмещаемые<br/>расходы</span></th>
+                <th style={{ textAlign: 'right' }}><span className="th-wrap">Возм.<br/>расходы</span></th>
+                <th style={{ textAlign: 'right' }}><span className="th-wrap">Невозм.<br/>расходы</span></th>
                 <th><span className="th-wrap">№<br/>счф</span></th>
                 <th style={{ textAlign: 'right' }}><span className="th-wrap">(+/-)<br/>опл.-расх.</span></th>
                 <th><span className="th-wrap">Статус</span></th>
@@ -1558,30 +1757,28 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
                     </td>
                     <td className="mono">{row.specNo || '—'}</td>
                     <td className="mono">{rowText(row, row.invoiceLabel)}</td>
-                    <td className="money">{renderMoney(row, row.invoiceSum)}</td>
-                    <td className="money">{renderMoney(row, row.paymentSum)}</td>
-                    <td className="money">{renderMoney(row, row.reimbursableSum)}</td>
-                    <td className="money">{renderMoney(row, row.nonReimbursableSum)}</td>
-                    <td className="mono">{rowText(row, row.sfLabel)}</td>
-                    <td className={`delta ${row.showAmounts === false ? '' : deltaClass(row.delta)}`}>{renderMoney(row, row.delta)}</td>
+                    <td className="money">{renderMoney(row, 'invoiceSum')}</td>
+                    <td className="money">{renderMoney(row, 'paymentSum')}</td>
+                    <td className="money">{renderMoney(row, 'reimbursableSum')}</td>
+                    <td className="money">{renderMoney(row, 'nonReimbursableSum')}</td>
+                    <td className="mono sf-cell"><div className="sf-lines">{rowText(row, row.sfLabel)}</div></td>
+                    <td className={`delta ${row.showAmounts === false ? '' : deltaClass(row.delta)}`}>{renderMoney(row, 'delta')}</td>
                     <td className="matrix-status-cell">{renderBadges(row.badges)}</td>
                   </tr>
                   {row.kind === 'spec' && expanded.has(row.id) && (
                     <tr className="matrix-row detail-host">
                       <td colSpan="10">
                         <div className="matrix-detail">
-                          <div className="matrix-detail-title">Документы внутри спецификации</div>
-                          <div className="matrix-detail-grid">
+                          <div className="matrix-detail-title">ERP-документы внутри поставки</div>
+                          <div className="matrix-detail-grid erp-only">
                             <div className="matrix-detail-head">Тип</div>
                             <div className="matrix-detail-head">ERP</div>
-                            <div className="matrix-detail-head">1С</div>
                             <div className="matrix-detail-head">Дата</div>
                             <div className="matrix-detail-head">Сумма</div>
                             {row.detailDocs.map(detail => (
                               <React.Fragment key={detail.id}>
-                                <div><span className={`matrix-badge ${detail.status.key}`}>{detail.status.label}</span> <span style={{ marginLeft: 6 }}>{detail.type}</span></div>
+                                <div>{detail.type}</div>
                                 <div className="mono">{detail.erp}</div>
-                                <div className="mono">{detail.onec}</div>
                                 <div className="mono">{detail.date}</div>
                                 <div className="mono">{fmtMoney(detail.amount)}</div>
                               </React.Fragment>
@@ -1603,6 +1800,334 @@ const ReconciliationMatrixPage = ({ onBack, onOpenReport, lastReport, compareSta
 };
 
 window.ReconciliationMatrixPage = ReconciliationMatrixPage;
+
+
+/* ===== Reconciliation monitor page ===== */
+const ReconciliationMonitorPage = ({ onBack, onOpenMatrix, dataState }) => {
+  const expectsUrlData = Boolean(getClientId() || getSpecId() || getFixtureName());
+  const snapshot = window.ERP_SNAPSHOT || {};
+  const model = buildMatrixModel();
+  const monitor = snapshot.reconciliation_monitor || {};
+  const source = snapshot.onec_source || {};
+  const summary = monitor.summary || {};
+  const fallbackRowsFromMatrix = () => {
+    const result = [];
+    const statusCodeFromKey = (key) => {
+      if (key === 'ok') return 'MATCH';
+      if (key === 'no1c') return 'NOT_FOUND_IN_1C';
+      if (key === 'noerp') return 'NOT_FOUND_IN_ERP';
+      if (key === 'sum' || key === 'fields' || key === 'nosf' || key === 'no-sf') return 'FIELDS_MISMATCH';
+      if (key === 'nokey') return 'NOT_COMPARABLE';
+      if (key === 'source-error') return 'SOURCE_ERROR_1C';
+      return 'NOT_COMPARABLE';
+    };
+    const reasonFromStatus = (status, label = '') => {
+      const text = String(label || '').toLowerCase();
+      if (status === 'MATCH') return 'Документ найден в ERP и 1С; номер, дата, сумма и привязка к договору/заявке совпали';
+      if (status === 'NOT_FOUND_IN_1C') return 'ERP-документ не найден в данных 1С';
+      if (status === 'NOT_FOUND_IN_ERP') return 'Документ 1С не найден среди ERP-документов текущей выборки';
+      if (status === 'FIELDS_MISMATCH') {
+        if (text.includes('договор')) return 'Документ найден по номеру/дате/сумме, но договор или заявка в 1С не совпадает с ERP';
+        if (text.includes('сумм')) return 'Документ найден, но сумма ERP и 1С отличается';
+        if (text.includes('ндс')) return 'Документ найден, но ставка НДС ERP и 1С отличается';
+        return 'Документ найден, но есть расхождения контролируемых полей';
+      }
+      if (status === 'SOURCE_ERROR_1C') return 'Ошибка чтения источника 1С';
+      return 'Недостаточно ключей для автоматической сверки';
+    };
+    const walk = (row, ctx = {}) => {
+      const next = { ...ctx };
+      if (row.kind === 'client') next.contact_name = row.name?.replace(/^Клиент:\s*/, '') || ctx.contact_name || '';
+      if (row.kind === 'legal') next.legal_name = row.name?.replace(/^ЮЛ:\s*/, '') || ctx.legal_name || '';
+      if (row.kind === 'contract') next.dog_number = row.name?.replace(/^Договор\s*:?\s*/, '') || ctx.dog_number || '';
+      if (row.kind === 'spec') {
+        const specId = row.meta?.spec_id || String(row.id || '').replace(/\D+/g, '') || 0;
+        (row.detailDocs || []).forEach((detail, idx) => {
+          const status = statusCodeFromKey(detail.status?.key);
+          result.push({
+            id: `${row.id || specId}-fallback-monitor-${idx}`,
+            spec_id: Number(specId) || 0,
+            spec_num: row.specNo || '',
+            spec_type: String(row.name || 'Поставка').replace(/\s*№.*$/, '') || 'Поставка',
+            spec_date: String(row.note || '').split(' · ')[0] || '',
+            spec_name: row.note || '',
+            dog_number: next.dog_number || '',
+            legal_name: next.legal_name || '',
+            contact_name: next.contact_name || '',
+            status,
+            status_key: detail.status?.key || 'pending',
+            status_label: detail.status?.label || status,
+            reason: reasonFromStatus(status, detail.status?.label),
+            mismatch_fields: [],
+            match_evidence: [],
+            erp_type: detail.type || '',
+            erp_number: detail.erp || '',
+            erp_code1c: detail.erp || '',
+            erp_date: detail.date || '',
+            erp_sum: detail.amount,
+            onec_type: detail.type || '',
+            onec_number: detail.onec || '',
+            onec_code1c: detail.onec || '',
+            onec_date: detail.date || '',
+            onec_sum: detail.amount,
+            onec_source_file: '',
+            onec_source_row: 0,
+          });
+        });
+      }
+      (row.children || []).forEach(child => walk(child, next));
+    };
+    (model.clients || []).forEach(client => client.root && walk(client.root, {}));
+    return result;
+  };
+  const rawMonitorRows = Array.isArray(monitor.rows) ? monitor.rows : [];
+  const rows = rawMonitorRows.length ? rawMonitorRows : fallbackRowsFromMatrix();
+  const effectiveSummary = rawMonitorRows.length ? summary : (() => {
+    const byStatus = rows.reduce((acc, row) => {
+      acc[row.status] = (acc[row.status] || 0) + 1;
+      return acc;
+    }, {});
+    const specs = new Set(rows.map(row => row.spec_id).filter(Boolean));
+    return {
+      specs_total: model.rowsCount || specs.size,
+      specs_checked: specs.size,
+      total_rows: rows.length,
+      matched_rows: byStatus.MATCH || 0,
+      issue_rows: rows.filter(row => row.status !== 'MATCH').length,
+      not_found_in_1c: byStatus.NOT_FOUND_IN_1C || 0,
+      not_found_in_erp: byStatus.NOT_FOUND_IN_ERP || 0,
+      fields_mismatch: byStatus.FIELDS_MISMATCH || 0,
+      not_comparable: byStatus.NOT_COMPARABLE || 0,
+      limitations: [],
+    };
+  })();
+  const [query, setQuery] = React.useState('');
+  const [filter, setFilter] = React.useState('all');
+
+  if (expectsUrlData && dataState?.state === 'loading') {
+    return (
+      <div className="page monitor-page">
+        <div className="monitor-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="monitor-title" style={{ marginTop: 12 }}>Загружаем монитор ERP ↔ 1С</div>
+            <div className="monitor-sub">Собираем ERP-поставки и сравниваем документы с 1С.</div>
+          </div>
+        </div>
+        <div className="monitor-shell" style={{ padding: 24 }}>
+          <div className="source-banner">
+            <IconSearch size={15}/>
+            <span>{dataState.message || 'Проверяем контекст ERP...'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (expectsUrlData && dataState?.state === 'error') {
+    return (
+      <div className="page monitor-page">
+        <div className="monitor-head">
+          <div>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <div className="monitor-title" style={{ marginTop: 12 }}>Монитор не загрузился</div>
+            <div className="monitor-sub">Live API не вернул данные сверки. Попробуйте меньший limit или отключите сверку 1С для экрана сальдо.</div>
+          </div>
+        </div>
+        <div className="monitor-shell" style={{ padding: 24 }}>
+          <div className="source-banner warn">
+            <IconAlert size={15}/>
+            <span>{dataState.message || 'Ошибка загрузки ERP API'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const statusFilters = [
+    ['all', 'Все'],
+    ['issues', 'Отклонения'],
+    ['NOT_FOUND_IN_1C', 'Нет в 1С'],
+    ['NOT_FOUND_IN_ERP', 'Нет в ERP'],
+    ['FIELDS_MISMATCH', 'Расхождения'],
+    ['NOT_COMPARABLE', 'Нет ключа'],
+  ];
+  const statusKey = (row) => row.status_key || (row.status === 'MATCH' ? 'ok' : 'fields');
+  const statusLabel = (row) => row.status_label || row.status || 'Статус';
+  const statusMatches = (row) => {
+    if (filter === 'all') return true;
+    if (filter === 'issues') return row.status !== 'MATCH';
+    return row.status === filter;
+  };
+  const rowSearchBlob = (row) => [
+    row.contact_name, row.contact_inn, row.legal_name, row.legal_inn,
+    row.dog_number, row.dog_code1c, row.spec_type, row.spec_num, row.spec_name,
+    row.erp_type, row.erp_number, row.erp_code1c, row.erp_invoice_number,
+    row.onec_type, row.onec_number, row.onec_code1c, row.onec_source_file,
+    row.reason,
+  ].join(' ').toLowerCase();
+  const filteredRows = rows.filter((row) => {
+    if (!statusMatches(row)) return false;
+    return !query || rowSearchBlob(row).includes(query.toLowerCase());
+  });
+  const fmtDoc = (system, row) => {
+    const prefix = system === 'erp' ? 'erp' : 'onec';
+    const type = row[`${prefix}_type`] || row[`${prefix}_doc_kind`] || 'Документ';
+    const number = row[`${prefix}_number`] || row[`${prefix}_code1c`] || '—';
+    const code = row[`${prefix}_code1c`] && row[`${prefix}_code1c`] !== number ? `код ${row[`${prefix}_code1c`]}` : '';
+    const date = row[`${prefix}_date`] || '—';
+    const amount = row[`${prefix}_sum`] == null ? '—' : fmtMoney(row[`${prefix}_sum`]);
+    const exportStateLabel = (state) => {
+      if (state === 'has_1c_key') return 'есть код 1С';
+      if (state === 'not_exported') return 'не выгружено в 1С';
+      return state || '';
+    };
+    const extra = system === 'erp'
+      ? [row.erp_dog_number ? `договор ${row.erp_dog_number}` : '', exportStateLabel(row.erp_export_state)].filter(Boolean).join(' · ')
+      : [row.onec_base_contract ? `базовый ${row.onec_base_contract}` : '', row.onec_spec_number ? `заявка ${row.onec_spec_number}` : ''].filter(Boolean).join(' · ');
+    return { type, number, code, date, amount, extra };
+  };
+  const sourceState = monitor.source_state || source.state || '';
+  const sourceLabel = sourceState ? '1С' : '1С';
+  const docsCount = Number(source.docs_count || 0);
+  const movementsCount = Number(source.account_movements_count || 0);
+  const linesCount = Number(source.document_lines_count || 0);
+  const issueRows = Number(effectiveSummary.issue_rows || 0);
+  const matchedRows = Number(effectiveSummary.matched_rows || 0);
+
+  return (
+    <div className="page monitor-page">
+      <div className="monitor-head">
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+            <button className="btn ghost sm" onClick={onBack}><IconArrowLeft size={13}/>К поставке</button>
+            <span className="pill-sm">Монитор ERP ↔ 1С</span>
+            <span className="mono muted" style={{ fontSize: 11.5 }}>{sourceLabel}</span>
+          </div>
+          <div className="monitor-title">Сверка документов ERP и 1С</div>
+          <div className="monitor-sub">
+            Проверено поставок: {effectiveSummary.specs_checked || 0} из {effectiveSummary.specs_total || model.rowsCount || 0} · строк сверки: {effectiveSummary.total_rows || 0}
+          </div>
+        </div>
+        <div className="monitor-actions">
+          <button className="btn sm" onClick={onOpenMatrix}><IconList size={13}/>Сальдо по поставкам</button>
+          <button className="btn sm" onClick={() => window.location.reload()}><IconRefresh size={13}/>Пересчитать</button>
+        </div>
+      </div>
+
+      <div className={`source-banner ${monitor.source_error ? 'warn' : 'ok'}`}>
+        <IconInfo size={14}/>
+        <span>
+          Источник 1С: {sourceLabel}; документы {docsCount}, движения счетов {movementsCount}, строки документов {linesCount}.
+          {monitor.source_error ? ` Ошибка: ${monitor.source_error}` : ''}
+        </span>
+      </div>
+
+      <div className="monitor-controls">
+        <select className="matrix-select" value={model.clients[0]?.id || ''} onChange={() => {}}>
+          {(model.clients || []).map(c => <option key={c.id} value={c.id}>{c.name}{c.inn ? ` · ИНН ${c.inn}` : ''}</option>)}
+        </select>
+        <div className="matrix-search">
+          <IconSearch size={14}/>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск по клиенту, ЮЛ, договору, поставке, ERP/1С номеру..." />
+        </div>
+        <div className="seg">
+          {statusFilters.map(([key, label]) => <button key={key} className={filter === key ? 'on' : ''} onClick={() => setFilter(key)}>{label}</button>)}
+        </div>
+      </div>
+
+      <div className="monitor-kpis">
+        <div className="matrix-kpi"><div className="v mono">{effectiveSummary.specs_checked || 0}</div><div className="l">Поставок проверено</div></div>
+        <div className="matrix-kpi"><div className="v mono">{effectiveSummary.total_rows || 0}</div><div className="l">Строк сверки</div></div>
+        <div className="matrix-kpi"><div className="v mono">{matchedRows}</div><div className="l">Совпало</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${issueRows ? 'neg' : ''}`}>{issueRows}</div><div className="l">Отклонений</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${effectiveSummary.not_found_in_1c ? 'neg' : ''}`}>{effectiveSummary.not_found_in_1c || 0}</div><div className="l">Нет в 1С</div></div>
+        <div className="matrix-kpi"><div className={`v mono ${effectiveSummary.not_found_in_erp ? 'neg' : ''}`}>{effectiveSummary.not_found_in_erp || 0}</div><div className="l">Нет в ERP</div></div>
+      </div>
+
+      {Array.isArray(effectiveSummary.limitations) && effectiveSummary.limitations.length > 0 && (
+        <div className="source-banner warn">
+          <IconAlert size={14}/>
+          <span>{effectiveSummary.limitations.join(' ')}</span>
+        </div>
+      )}
+
+      <div className="monitor-shell">
+        <div className="monitor-scroll">
+          <table className="monitor-table">
+            <colgroup>
+              <col style={{ width: '13%' }}/>
+              <col style={{ width: '21%' }}/>
+              <col style={{ width: '19%' }}/>
+              <col style={{ width: '19%' }}/>
+              <col style={{ width: '20%' }}/>
+              <col style={{ width: '8%' }}/>
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Статус</th>
+                <th>Поставка</th>
+                <th>ERP</th>
+                <th>1С</th>
+                <th>Причина</th>
+                <th>Источник</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map(row => {
+                const erp = fmtDoc('erp', row);
+                const onec = fmtDoc('onec', row);
+                return (
+                  <tr key={row.id}>
+                    <td>
+                      <div className="monitor-status">
+                        <span className={`matrix-badge ${statusKey(row)}`}>{statusLabel(row)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="monitor-doc">
+                        <div className="doc-main">{row.spec_type} №{row.spec_num || row.spec_id}</div>
+                        <div className="doc-meta">{row.spec_date || '—'} · spec_id {row.spec_id}</div>
+                        <div className="doc-meta">Договор {row.dog_number || '—'}{row.dog_code1c ? ` · код 1С ${row.dog_code1c}` : ''}</div>
+                        <div className="doc-meta">{row.legal_name || row.contact_name || '—'}{row.legal_inn ? ` · ИНН ${row.legal_inn}` : ''}</div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="monitor-doc">
+                        <div className="doc-main">{erp.type}</div>
+                        <div className="doc-meta mono">{erp.number}{erp.code ? ` · ${erp.code}` : ''}</div>
+                        <div className="doc-meta mono">{erp.date} · {erp.amount}</div>
+                        {erp.extra && <div className="doc-meta">{erp.extra}</div>}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="monitor-doc">
+                        <div className="doc-main">{onec.type}</div>
+                        <div className="doc-meta mono">{onec.number}{onec.code ? ` · ${onec.code}` : ''}</div>
+                        <div className="doc-meta mono">{onec.date} · {onec.amount}</div>
+                        {onec.extra && <div className="doc-meta">{onec.extra}</div>}
+                      </div>
+                    </td>
+                    <td><div className="monitor-reason">{row.reason || '—'}</div></td>
+                    <td>
+                      <div className="monitor-source">
+                        {row.onec_source_file || '—'}
+                        {row.onec_source_row ? <><br/>строка {row.onec_source_row}</> : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredRows.length === 0 && <div className="monitor-empty">Нет строк сверки по выбранному фильтру</div>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+window.ReconciliationMonitorPage = ReconciliationMonitorPage;
 
 
 /* ===== src/DeliveryCard.jsx ===== */
@@ -2167,7 +2692,7 @@ const ReportRow = ({ rec, expanded, onToggle, onOpenDrawer, onCopy, onGotoOp, on
             {hasErp && <button className="btn sm" onClick={() => onGotoOp(rec.opId)}><IconExternal size={13}/>Открыть операцию {rec.opId}</button>}
             {!hasErp && rec.rc && <button className="btn sm brand" onClick={() => onLink(rec)}><IconLink size={13}/>Привязать документ к операции</button>}
             {rec.status === 'sum' && <button className="btn sm"><IconCheck size={13}/>Отметить проверено вручную</button>}
-            {rec.status === 'vat' && <button className="btn sm"><IconSparkle size={13}/>Проверить возмещаемость</button>}
+            {rec.status === 'vat' && <button className="btn sm"><IconSparkle size={13}/>Проверить НДС</button>}
             {rec.skipReason && <span className="chip neutral" style={{ alignSelf: 'center' }}><span className="dot"/>Не сверяется</span>}
             <button className="btn sm ghost" style={{ marginLeft: 'auto' }}>Игнорировать с комментарием</button>
           </div>
@@ -2191,6 +2716,9 @@ const SummaryStats = ({ docs, activeFilter, onFilter }) => {
     { key: 'miss-1c',  label: 'Нет в 1С',             count: (by['miss-1c'] || []).length,   swatch: 'var(--miss-1c)' },
     { key: 'sum',      label: 'Расхождение по сумме', count: (by['sum'] || []).length,       swatch: 'var(--sum-mismatch)' },
     { key: 'vat',      label: 'Вопрос по НДС',        count: (by['vat'] || []).length,       swatch: 'var(--vat)' },
+    { key: 'fields',   label: 'Требует проверки',     count: (by['fields'] || []).length,    swatch: 'var(--miss-erp)' },
+    { key: 'no-sf',    label: 'Нет СФ/УПД',           count: (by['no-sf'] || []).length,     swatch: 'var(--vat)' },
+    { key: 'source-error', label: 'Ошибка 1С',        count: (by['source-error'] || []).length, swatch: 'var(--miss-erp)' },
     { key: 'no-kod1c', label: 'Нет ключа 1С',         count: (by['no-kod1c'] || []).length,  swatch: 'var(--muted)' },
     { key: 'pending',  label: 'Не сверено',            count: (by['pending'] || []).length,   swatch: 'var(--brand)' },
   ];
@@ -2442,7 +2970,7 @@ const ReportScreen = ({ onBack, onRecompare, onOpenExport, onOpenLink, onToast, 
   const snapshot = window.ERP_SNAPSHOT || {};
   const recon = window.RECONCILIATION_REPORT || {};
   const source = recon.source || null;
-  const sourceLabel = recon.sourceState === 'postgresql' ? '1С PostgreSQL' : '1С XLSX';
+  const sourceLabel = '1С';
   const counts = recon.counts || {};
   const xlsxUrl = snapshot.xlsx_url ? apiUrl(snapshot.xlsx_url) : null;
   const templateUrl = getOneCTemplateUrl();
@@ -2715,8 +3243,9 @@ const SCREEN_KEY = 'akt_sverki_screen_v1';
 const screenFromLocation = () => {
   const params = new URLSearchParams(window.location.search);
   const requested = (params.get('screen') || params.get('view') || window.location.hash.replace(/^#/, '') || '').toLowerCase();
-  if (['delivery', 'matrix'].includes(requested)) return requested;
-  if (params.has('spec_id')) return 'matrix';
+  if (['delivery', 'matrix', 'monitor'].includes(requested)) return requested;
+  if (['reconciliation', 'recon', 'compare'].includes(requested)) return 'monitor';
+  if (params.has('spec_id') || params.has('specId') || params.has('client_id') || params.has('clientId') || params.has('legal_id') || params.has('contact_id') || params.has('fixture') || params.has('reference')) return 'matrix';
   return '';
 };
 
@@ -2752,16 +3281,17 @@ const App = () => {
 
   React.useEffect(() => {
     let alive = true;
-    loadErpSnapshot()
+    setDataState({ state: 'loading', message: screen === 'monitor' ? 'Загружаем сверку ERP и 1С...' : 'Проверяем контекст ERP...' });
+    loadErpSnapshot({ compareOneC: screen === 'monitor' })
       .then((state) => { if (alive) setDataState(state); })
       .catch((err) => {
         if (!alive) return;
         console.warn('ERP snapshot failed', err);
         window.ERP_SNAPSHOT = { ...window.ERP_SNAPSHOT, sourceState: 'error' };
-        setDataState({ state: 'error', message: 'ERP API недоступен: не удалось получить данные по spec_id. Показан локальный пример.' });
+        setDataState({ state: 'error', message: 'ERP API недоступен: не удалось получить данные по URL-параметрам. Показан локальный пример.' });
       });
     return () => { alive = false; };
-  }, []);
+  }, [screen]);
 
   // Apply tweaks to body
   React.useEffect(() => {
@@ -2821,30 +3351,32 @@ const App = () => {
 
   const runDriveSync = async () => {
     if (syncState.state === 'loading') return;
-    setSyncState({ state: 'loading', message: 'Синхронизируем выгрузки 1С из Google Drive...' });
+    setSyncState({ state: 'loading', message: 'Синхронизируем выгрузки 1С...' });
     try {
       const payload = await syncOneCDrive();
       const sync = payload.sync || {};
       setSyncState({
         state: 'done',
-        message: `Google Drive: ${sync.xlsx_files_count || 0} файл(ов), ${sync.docs_count || 0} строк 1С в PostgreSQL`,
+        message: `Выгрузки 1С: ${sync.xlsx_files_count || 0} файл(ов), ${sync.docs_count || 0} строк 1С`,
       });
       fireToast(`Синхронизация 1С: ${sync.docs_count || 0} строк`);
     } catch (err) {
       console.error('1C Drive sync failed', err);
-      setSyncState({ state: 'error', message: err.message || 'Не удалось синхронизировать Google Drive' });
-      fireToast(err.message || 'Не удалось синхронизировать Google Drive');
+      setSyncState({ state: 'error', message: err.message || 'Не удалось синхронизировать выгрузки 1С' });
+      fireToast(err.message || 'Не удалось синхронизировать выгрузки 1С');
     }
   };
 
-  const activeNav = screen === 'delivery' ? 'delivery' : screen === 'matrix' ? 'matrix' : screen === 'progress' || screen === 'report' ? 'recon' : 'other';
+  const activeNav = screen === 'delivery' ? 'delivery' : screen === 'matrix' ? 'matrix' : screen === 'monitor' || screen === 'progress' || screen === 'report' ? 'recon' : 'other';
   const currentCrumb = screen === 'progress'
     ? 'Сверка с 1С (в процессе)'
     : screen === 'report'
       ? 'Отчёт сверки'
-      : screen === 'matrix'
-        ? 'Матрица взаиморасчетов'
-        : '';
+      : screen === 'monitor'
+        ? 'Монитор ERP ↔ 1С'
+        : screen === 'matrix'
+          ? 'Сальдо по поставкам'
+          : '';
 
   return (
     <>
@@ -2862,11 +3394,11 @@ const App = () => {
             <div className={`nav-item ${activeNav === 'delivery' ? 'active' : ''}`} onClick={() => setScreen('delivery')}>
               <IconBox size={14}/>Поставки<span className="count">12</span>
             </div>
-            <div className={`nav-item ${activeNav === 'recon' ? 'active' : ''}`} onClick={() => lastReport ? setScreen('report') : setScreen('delivery')}>
-              <IconRefresh size={14}/>Сверки<span className="count">84</span>
+            <div className={`nav-item ${activeNav === 'recon' ? 'active' : ''}`} onClick={() => setScreen('monitor')}>
+              <IconRefresh size={14}/>Сверка ERP↔1С<span className="count">84</span>
             </div>
             <div className={`nav-item ${activeNav === 'matrix' ? 'active' : ''}`} onClick={() => setScreen('matrix')}>
-              <IconList size={14}/>Матрица<span className="count">1</span>
+              <IconList size={14}/>Сальдо<span className="count">1</span>
             </div>
             <div className="nav-item"><IconChart size={14}/>Аналитика</div>
             <div className="nav-item"><IconDoc size={14}/>Документы</div>
@@ -2928,9 +3460,17 @@ const App = () => {
           {screen === 'matrix' && (
             <ReconciliationMatrixPage
               onBack={() => setScreen('delivery')}
-              onOpenReport={() => lastReport ? setScreen('report') : runFolderCompare()}
+              onOpenReport={() => setScreen('monitor')}
               lastReport={lastReport}
               compareState={compareState}
+              dataState={dataState}
+            />
+          )}
+          {screen === 'monitor' && (
+            <ReconciliationMonitorPage
+              onBack={() => setScreen('delivery')}
+              onOpenMatrix={() => setScreen('matrix')}
+              dataState={dataState}
             />
           )}
           {screen === 'report' && (
