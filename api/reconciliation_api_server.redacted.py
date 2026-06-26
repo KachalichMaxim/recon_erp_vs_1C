@@ -4429,7 +4429,7 @@ def compare_documents(
 
         if mismatch_fields:
             status = STATUS_FIELDS_MISMATCH
-            note = "Поля документа различаются"
+            note = "Документ требует проверки"
         else:
             status = STATUS_MATCH
             note = ""
@@ -5259,6 +5259,21 @@ def one_line(value: object) -> str:
     return " ".join(str(value or "").replace("\t", " ").replace("\r", " ").replace("\n", " ").split())
 
 
+def plural_ru(value: int, one: str, few: str, many: str) -> str:
+    value_abs = abs(int(value))
+    if value_abs % 100 in {11, 12, 13, 14}:
+        return many
+    if value_abs % 10 == 1:
+        return one
+    if value_abs % 10 in {2, 3, 4}:
+        return few
+    return many
+
+
+def supplies_count_label(value: int) -> str:
+    return f"{value} {plural_ru(value, 'поставка', 'поставки', 'поставок')}"
+
+
 def meaningful_text(value: object) -> str:
     text = one_line(value)
     if text in {"", "_", "-", "0"}:
@@ -5285,22 +5300,17 @@ def balance_badge_label(delta: float) -> str:
     return ""
 
 
+def settlement_badges(delta: float) -> list[dict[str, str]]:
+    label = balance_badge_label(delta)
+    if not label:
+        return []
+    return [{"key": "overpay" if delta > 0 else "debt", "label": label}]
+
+
 def matrix_badges(issues: list[str], delta: float) -> list[dict[str, str]]:
-    badges: list[dict[str, str]] = []
-    if "NO_CUSTOMER_INVOICE" in issues:
-        badges.append({"key": "noerp", "label": "Нет счета покупателю"})
-    if "NO_CLOSING_DOC" in issues:
-        badges.append({"key": "no1c", "label": "Нет закрывающего документа"})
-    if "PAYMENT_ROUTINE_VS_DOCS_MISMATCH" in issues:
-        badges.append({"key": "fields", "label": "Оплаты расходятся"})
-    if "UNCLASSIFIED_REALIZATION" in issues:
-        badges.append({"key": "fields", "label": "Не определена возмещаемость"})
-    balance_label = balance_badge_label(delta)
-    if balance_label:
-        badges.append({"key": "sum", "label": balance_label})
-    if not badges:
-        badges.append({"key": "ok", "label": "ОК"})
-    return badges
+    # Страница сальдо по поставкам не является монитором сверки ERP ↔ 1С.
+    # Здесь показываем только бизнес-статус взаиморасчетов: долг или переплата.
+    return settlement_badges(delta)
 
 
 def aggregate_matrix_rows(rows: list[dict[str, object]]) -> dict[str, object]:
@@ -5311,24 +5321,7 @@ def aggregate_matrix_rows(rows: list[dict[str, object]]) -> dict[str, object]:
         "nonReimbursableSum": live_money(sum(live_money(row.get("nonReimbursableSum")) for row in rows)),
         "delta": live_money(sum(live_money(row.get("delta")) for row in rows)),
     }
-    issues: list[dict[str, str]] = []
-    for row in rows:
-        for badge in row.get("badges", []) if isinstance(row.get("badges"), list) else []:
-            if isinstance(badge, dict) and badge.get("key") != "ok":
-                label = one_line(badge.get("label")) or "Отклонение"
-                label = re.sub(r"(?::\s*\d+)+$", "", label).strip()
-                issues.append({"key": one_line(badge.get("key")) or "sum", "label": label or "Отклонение"})
-    if not issues:
-        totals["badges"] = [{"key": "ok", "label": "ОК"}]
-    else:
-        grouped: dict[tuple[str, str], int] = {}
-        for issue in issues:
-            grouped[(issue["key"], issue["label"])] = grouped.get((issue["key"], issue["label"]), 0) + 1
-        if len(grouped) == 1:
-            (key, label), count = next(iter(grouped.items()))
-            totals["badges"] = [{"key": key, "label": f"{label}: {count}"}]
-        else:
-            totals["badges"] = [{"key": "sum", "label": f"Отклонений: {len(issues)}"}]
+    totals["badges"] = settlement_badges(totals["delta"])
     totals["showAmounts"] = True
     return totals
 
@@ -5528,7 +5521,7 @@ def compare_status_badge(row: dict[str, object]) -> dict[str, str]:
             return {"key": "fields", "label": "Дата расходится"}
         if "invoice_number" in mismatch_fields or "number" in mismatch_fields or "code1c" in mismatch_fields:
             return {"key": "fields", "label": "Номер расходится"}
-        return {"key": "fields", "label": "Поля документа расходятся"}
+        return {"key": "fields", "label": "Требует проверки"}
     if status == STATUS_NOT_COMPARABLE:
         return {"key": "nokey", "label": "Нет ключа 1С"}
     return {"key": "pending", "label": "Не сверено"}
@@ -5548,7 +5541,7 @@ def compare_matrix_badges(report: dict[str, object] | None, delta: float, fallba
     match_count = sql_int(summary.get(STATUS_MATCH))
     has_compare_problem = bool(not_found_1c or not_found_erp or mismatch_total or not_comparable)
     if total and not has_compare_problem:
-        badges.append({"key": "ok", "label": f"1С: {match_count}/{total} совпало"})
+        badges.append({"key": "ok", "label": f"Совпало {match_count}/{total}"})
     if not_found_1c:
         badges.append({"key": "no1c", "label": f"Нет в 1С {not_found_1c}"})
     if not_found_erp:
@@ -5557,12 +5550,12 @@ def compare_matrix_badges(report: dict[str, object] | None, delta: float, fallba
         badges.append({"key": "sum", "label": f"Сумма расходится {mismatch_sum}"})
     other_mismatch = max(mismatch_total - mismatch_sum, 0)
     if other_mismatch:
-        badges.append({"key": "fields", "label": f"Поля расходятся {other_mismatch}"})
+        badges.append({"key": "fields", "label": f"Документы расходятся {other_mismatch}"})
     if not_comparable:
         badges.append({"key": "nokey", "label": f"Нет ключа 1С {not_comparable}"})
     balance_label = balance_badge_label(delta)
     if balance_label:
-        badges.append({"key": "sum", "label": balance_label})
+        badges.append({"key": "overpay" if delta > 0 else "debt", "label": balance_label})
     if not badges:
         badges.append({"key": "ok", "label": "ОК" if total else "Нет строк сверки"})
     return badges
@@ -5612,15 +5605,13 @@ def compare_status_reason(row: dict[str, object]) -> str:
     if note:
         return note
     if status == STATUS_MATCH:
-        if evidence:
-            return "Найден документ 1С и совпали контролируемые поля: " + ", ".join(str(x) for x in evidence[:5])
-        return "Найден документ 1С и совпали контролируемые поля"
+        return "Документ найден в ERP и 1С; номер, дата, сумма и привязка к договору/заявке совпали"
     if status == STATUS_NOT_FOUND_IN_1C:
-        return "ERP-документ не найден в загруженной выгрузке 1С Postgre"
+        return "ERP-документ не найден в данных 1С"
     if status == STATUS_NOT_FOUND_IN_ERP:
         return "Документ 1С не найден среди ERP-документов выбранной поставки"
     if status == STATUS_NOT_COMPARABLE:
-        return "Недостаточно ключей для автоматической сверки: нужен kod1c и дата документа"
+        return "Недостаточно данных для автоматической сверки: нужен код 1С/номер документа и дата"
     if status == STATUS_FIELDS_MISMATCH:
         if "sum" in fields or "amount" in fields:
             return "Документ найден, но сумма ERP и 1С отличается"
@@ -5726,7 +5717,7 @@ def build_monitor_rows_for_spec(
             "erp_code1c": "",
             "erp_date": "",
             "erp_sum": None,
-            "onec_type": "PostgreSQL 1С",
+            "onec_type": "Данные 1С",
             "onec_number": "",
             "onec_code1c": "",
             "onec_date": "",
@@ -5757,13 +5748,13 @@ def summarize_reconciliation_monitor(rows: list[dict[str, object]], specs_total:
 
     limitations: list[str] = []
     if by_status.get(STATUS_NOT_COMPARABLE):
-        limitations.append("Часть ERP-документов не имеет kod1c и/или даты, поэтому автоматическая сверка невозможна.")
+        limitations.append("Часть ERP-документов не имеет кода 1С/номера или даты, поэтому автоматическая сверка невозможна.")
     if by_status.get(STATUS_NOT_FOUND_IN_1C):
-        limitations.append("Есть ERP-документы, которые не найдены в загруженной выгрузке 1С Postgre.")
+        limitations.append("Есть ERP-документы, которые не найдены в данных 1С.")
     if by_status.get(STATUS_NOT_FOUND_IN_ERP):
         limitations.append("Есть документы 1С, которые не сопоставились с ERP-поставками текущей выборки.")
     if any("contract" in (row.get("mismatch_fields") or []) for row in rows):
-        limitations.append("Для части строк 1С не хватает аналитики договора/заявки; такие строки подтверждают сумму, но не дают полного MATCH.")
+        limitations.append("Для части строк 1С не хватает аналитики договора/заявки; такие строки подтверждают сумму, но не дают полного автоматического совпадения.")
     if any("sum" in (row.get("mismatch_fields") or []) for row in rows):
         limitations.append("Есть документы с расхождением суммы ERP и 1С.")
 
@@ -5923,7 +5914,7 @@ def build_client_spec_row(
                     f"spec-{spec_id}-compare-error",
                     "Сверка 1С",
                     "ERP",
-                    "PostgreSQL 1С",
+                    "Данные 1С",
                     "",
                     0,
                     "source-error",
@@ -5955,7 +5946,7 @@ def build_client_spec_row(
         "nonReimbursableSum": non_reimbursable,
         "sfLabel": joined_unique_lines([document_line(doc) for doc in acts]),
         "delta": delta,
-        "badges": [{"key": "source-error", "label": "Ошибка 1С"}] if compare_error else compare_matrix_badges(compare_report, delta, issues),
+        "badges": settlement_badges(delta),
         "showAmounts": True,
         "meta": {
             "spec_id": spec_id,
@@ -5985,7 +5976,7 @@ def build_client_matrix_snapshot(
     dog_id: int = 0,
     limit: int = 25,
     scope: str = "auto",
-    compare_1c: bool = True,
+    compare_1c: bool = False,
     source_mode: str = "postgresql",
 ) -> dict[str, object]:
     try:
@@ -6002,11 +5993,11 @@ def build_client_matrix_snapshot(
             try:
                 onec_base_source = load_onec_sources_from_postgres(snapshot=None)
             except Exception as exc:
-                onec_source_error = str(exc)
+                onec_source_error = "Данные 1С недоступны для автоматической сверки"
                 if source_mode in {"postgres", "postgresql", "pg"}:
                     onec_base_source = None
         else:
-            onec_source_error = f"Unsupported client matrix 1C source mode: {source_mode}"
+            onec_source_error = "Источник данных 1С не поддерживается для этой сверки"
     if not specs:
         return {
             "ok": True,
@@ -6024,7 +6015,7 @@ def build_client_matrix_snapshot(
                 "clients": [],
                 "totals": {"invoiceSum": 0, "paymentSum": 0, "reimbursableSum": 0, "nonReimbursableSum": 0, "delta": 0},
                 "rowsCount": 0,
-                "sourceLabel": f"Live MariaDB ERP{' + 1C Postgre' if onec_base_source else ''} · client_id {client_id} · нет поставок",
+                "sourceLabel": f"ERP · client_id {client_id} · нет поставок",
             },
             "onec_source": {
                 "enabled": compare_1c,
@@ -6037,7 +6028,7 @@ def build_client_matrix_snapshot(
                 "source_error": onec_source_error,
                 "rows": [],
                 "summary": summarize_reconciliation_monitor([], 0),
-                "mapping_version": "erp_1c_postgresql_v1",
+                "mapping_version": "erp_1c_v1",
             },
         }
 
@@ -6110,7 +6101,7 @@ def build_client_matrix_snapshot(
                         "level": 2,
                         "name": f"Договор {dog.get('number')}",
                         "note": " · ".join([item for item in [f"dog_id {dog.get('id')}", f"код 1С {dog.get('code1c')}" if dog.get("code1c") else "", one_line(dog.get("date"))] if item]),
-                        "specNo": f"{len(spec_rows)} поставок",
+                        "specNo": supplies_count_label(len(spec_rows)),
                         "isParent": True,
                         "defaultExpanded": True,
                         "children": spec_rows,
@@ -6149,6 +6140,7 @@ def build_client_matrix_snapshot(
 
     matrix_totals = aggregate_matrix_rows(all_spec_rows)
     first_spec = specs[0]
+    client_display_name = meaningful_text(first_spec.get("contact_name")) or meaningful_text(first_spec.get("legal_name")) or f"client_id {client_id}"
     return {
         "ok": True,
         "source": "live_client_mariadb",
@@ -6156,10 +6148,10 @@ def build_client_matrix_snapshot(
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "parameters": {"client_id": client_id, "dog_id": dog_id, "limit": limit, "scope": scope, "compare_1c": compare_1c, "source_mode": source_mode},
         "delivery": {
-            "request_label": f"Матрица client_id {client_id}",
+            "request_label": f"Матрица {client_display_name}",
             "spec_id": 0,
             "client_id": sql_int(first_spec.get("legal_id")),
-            "client_name": meaningful_text(first_spec.get("contact_name")) or meaningful_text(first_spec.get("legal_name")),
+            "client_name": client_display_name,
             "client_inn": meaningful_text(first_spec.get("contact_inn")) or meaningful_text(first_spec.get("legal_inn")),
             "main_dog_id": dog_id or sql_int(first_spec.get("dog_id")),
             "main_dog_number": one_line(first_spec.get("dog_number")),
@@ -6169,7 +6161,7 @@ def build_client_matrix_snapshot(
             "clients": clients,
             "totals": matrix_totals,
             "rowsCount": len(all_spec_rows),
-            "sourceLabel": f"Live MariaDB ERP{' + 1C Postgre' if onec_base_source else ''} · client_id {client_id} · {len(all_spec_rows)} поставок · limit {limit}",
+            "sourceLabel": f"ERP · {supplies_count_label(len(all_spec_rows))}",
         },
         "onec_source": {
             "enabled": compare_1c,
@@ -6185,7 +6177,7 @@ def build_client_matrix_snapshot(
             "source_error": onec_source_error,
             "rows": all_monitor_rows,
             "summary": summarize_reconciliation_monitor(all_monitor_rows, len(all_spec_rows)),
-            "mapping_version": "erp_1c_postgresql_v1",
+            "mapping_version": "erp_1c_v1",
         },
         "summary": {
             "specs": len(all_spec_rows),
@@ -6816,7 +6808,7 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
         scope = normalize_text((params.get("scope") or [params.get("client_scope", ["auto"])[0]])[0]).lower() or "auto"
         if scope not in {"auto", "legal", "contact"}:
             scope = "auto"
-        compare_raw = normalize_text((params.get("compare_1c") or params.get("compare1c") or params.get("with_1c") or ["1"])[0]).lower()
+        compare_raw = normalize_text((params.get("compare_1c") or params.get("compare1c") or params.get("with_1c") or ["0"])[0]).lower()
         compare_1c = compare_raw not in {"0", "false", "no", "off"}
         source_mode = normalize_text((params.get("source") or params.get("source_mode") or ["postgresql"])[0]).lower() or "postgresql"
 
@@ -6846,7 +6838,7 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
         scope = normalize_text((params.get("scope") or [params.get("client_scope", ["auto"])[0]])[0]).lower() or "auto"
         if scope not in {"auto", "legal", "contact"}:
             scope = "auto"
-        compare_raw = normalize_text((params.get("compare_1c") or params.get("compare1c") or params.get("with_1c") or ["1"])[0]).lower()
+        compare_raw = normalize_text((params.get("compare_1c") or params.get("compare1c") or params.get("with_1c") or ["0"])[0]).lower()
         compare_1c = compare_raw not in {"0", "false", "no", "off"}
         source_mode = normalize_text((params.get("source") or params.get("source_mode") or ["postgresql"])[0]).lower() or "postgresql"
 
@@ -6929,7 +6921,7 @@ class ReconciliationApiHandler(SimpleHTTPRequestHandler):
                 if pg_source.get("all_docs_count", 0) or source_mode != "auto":
                     return compare_onec_docs_with_erp_snapshot(spec_id, pg_source, snapshot)
             except Exception as exc:
-                pg_warning = f"PostgreSQL source unavailable: {exc}"
+                pg_warning = "Данные 1С недоступны для автоматической сверки"
                 if source_mode in {"postgres", "postgresql", "pg"}:
                     raise
 
